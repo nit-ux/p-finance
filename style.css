@@ -51,26 +51,17 @@ h1, h2 { color: #0056b3; text-align: center; }
     justify-content: space-between;
     padding: 2px 5px;
 }
-.balance-item span:first-child {
-    font-weight: normal;
-}
-.balance-item span:last-child {
-    font-weight: bold;
-}
 
 .filters { display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; align-items: center; }
 .filters label, .filters input, .filters button { font-size: 1em; }
-.filters button { background-color: #28a745; color: white; border: none; padding: 10px 15px; cursor: pointer; border-radius: 5px; transition: background-color 0.3s ease; }
-.filters button:hover { background-color: #218838; }
+.filters button { background-color: #28a745; color: white; border: none; padding: 10px 15px; cursor: pointer; border-radius: 5px; }
 
 .transaction-card {
     background-color: #f2f2f2;
-    color: #333;
     padding: 15px;
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     margin-bottom: 15px;
-    transition: background-color 0.3s ease;
 }
 .card-header, .card-footer {
      display: flex; justify-content: space-between; align-items: center;
@@ -90,10 +81,8 @@ h1, h2 { color: #0056b3; text-align: center; }
 .input-form .full-width { grid-column: 1 / -1; }
 .input-form button {
     background-color: #007bff; color: white; border: none; padding: 12px 15px;
-    cursor: pointer; border-radius: 5px; transition: background-color 0.3s ease;
-    width: 100%; grid-column: 1 / -1; font-size: 1.1em;
+    cursor: pointer; border-radius: 5px; font-size: 1.1em;
 }
-.input-form button:hover { background-color: #0056b3; }
 
 .message-box {
     position: fixed; top: 50%; left: 50%;
@@ -101,48 +90,26 @@ h1, h2 { color: #0056b3; text-align: center; }
     border-radius: 8px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
     z-index: 1000; display: none; text-align: center;
 }
-.message-box p { margin: 0 0 15px 0; font-size: 1.1em; }
-.message-box button {
-    background-color: #007bff; color: white; border: none;
-    padding: 8px 15px; cursor: pointer; border-radius: 4px;
-}
 
 .tab-bar {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    display: flex;
-    justify-content: space-around;
+    position: fixed; bottom: 0; left: 0; right: 0;
+    display: flex; justify-content: space-around;
     background-color: #ffffff;
     box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
-    padding: 10px 0;
-    z-index: 100;
+    padding: 10px 0; z-index: 100;
 }
 .tab-link {
-    flex: 1;
-    text-align: center;
-    background: none;
-    border: none;
-    font-size: 1em;
-    color: #888;
-    cursor: pointer;
-    padding: 10px 5px;
-    transition: color 0.3s ease;
+    flex: 1; text-align: center; background: none; border: none;
+    font-size: 1em; color: #888; cursor: pointer; padding: 10px 5px;
 }
-.tab-link.active {
-    color: #007bff;
-    font-weight: bold;
-}
-.tab-link:hover {
-    color: #0056b3;
-}
+.tab-link.active { color: #007bff; font-weight: bold; }
 
 .page-content { display: block; }
 .page-content.hidden { display: none; }
 
 #accounts-page h2, #category-page h2 { margin-bottom: 20px; }
 
+/* --- NEW & MODIFIED STYLES FOR INTERACTIVE CATEGORY/ACCOUNT ITEMS --- */
 .account-item, .category-item {
     display: flex;
     justify-content: space-between;
@@ -152,52 +119,48 @@ h1, h2 { color: #0056b3; text-align: center; }
     border: 1px solid #dee2e6;
     border-radius: 5px;
     margin-bottom: 10px;
-}
-.remove-btn {
-    background-color: #dc3545;
-    color: white;
-    border: none;
-    padding: 5px 10px;
-    border-radius: 4px;
     cursor: pointer;
+    transition: background-color 0.2s ease;
 }
-/* --- NEW STYLES FOR EDIT FUNCTIONALITY --- */
-.edit-btn {
-    background-color: #ffc107; /* Yellow */
-    color: black;
-    border: none;
-    padding: 5px 10px;
-    border-radius: 4px;
-    cursor: pointer;
-    margin-right: 5px;
-}
-.edit-category-input {
-    border: 1px solid #007bff;
-    padding: 4px;
-    border-radius: 4px;
-}
-.item-name {
-    flex-grow: 1; /* Allows name to take up available space */
+.account-item:hover, .category-item:hover {
+    background-color: #e9ecef;
 }
 
+.item-content {
+    flex-grow: 1;
+}
+
+.edit-category-input {
+    width: 100%;
+    font-size: 1em;
+    padding: 4px;
+    border: 1px solid #007bff;
+    border-radius: 4px;
+    box-sizing: border-box; /* Important */
+}
+
+/* Hide elements by default or when not in a specific state */
+.hidden { display: none; }
+
+/* Buttons for item actions */
+.item-actions button {
+    border: none;
+    padding: 8px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    color: white;
+}
+.save-btn { background-color: #007bff; } /* Blue */
+.remove-btn { background-color: #dc3545; } /* Red */
+
 .add-account-form, .add-category-form {
-    display: flex;
-    gap: 10px;
-    margin-top: 20px;
-    padding-top: 20px;
-    border-top: 1px solid #ddd;
+    display: flex; gap: 10px; margin-top: 20px;
+    padding-top: 20px; border-top: 1px solid #ddd;
 }
 .add-account-form input, .add-category-form input { 
-    flex: 1; 
-    padding: 8px; 
-    border: 1px solid #ccc; 
-    border-radius: 4px; 
+    flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 4px; 
 }
 .add-account-form button, .add-category-form button { 
-    background-color: #28a745; 
-    color: white; 
-    border: none; 
-    padding: 8px 15px; 
-    border-radius: 4px; 
-    cursor: pointer; 
+    background-color: #28a745; color: white; border: none; 
+    padding: 8px 15px; border-radius: 4px; cursor: pointer; 
 }
