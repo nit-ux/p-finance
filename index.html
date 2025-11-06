@@ -4,7 +4,6 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Advanced Cashbook</title>
-    <!-- Link to the external CSS file -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -14,13 +13,10 @@
     <div id="home-page" class="page-content">
         <h1>ADVANCED CASHBOOK</h1>
         <div class="balance-container">
-            <!-- Single combined balance card -->
             <div class="data-card" style="background-color: #007bff;">
                 <h3>Total Account Balance</h3>
                 <p id="total-balance">0</p>
-                <div id="individual-balances">
-                    <!-- Individual balances will be populated here by JavaScript -->
-                </div>
+                <div id="individual-balances"></div>
             </div>
         </div>
         <div class="input-form">
@@ -29,13 +25,9 @@
                 <option value="INCOME">INCOME</option>
                 <option value="EXPENSE">EXPENSE</option>
             </select>
+            <!-- MODIFIED: Category dropdown is now dynamic -->
             <select id="add-category" name="category" required="true">
-                <option value="" disabled="true" selected="true">Select Category</option>
-                <option value="BY AKD">BY AKD</option>
-                <option value="OFFICE ESSENTIAL">OFFICE ESSENTIAL</option>
-                <option value="FOOD">FOOD</option>
-                <option value="PRINT OUT">PRINT OUT</option>
-                <option value="OTHER">OTHER</option>
+                <!-- Options will be populated by JavaScript -->
             </select>
             <select id="add-paymentMode" name="paymentMode" required="true">
                 <!-- Options will be populated by JavaScript -->
@@ -46,7 +38,19 @@
         </div>
     </div>
     
-    <!-- PAGE 2: ACCOUNTS -->
+    <!-- NEW: PAGE FOR CATEGORIES -->
+    <div id="category-page" class="page-content hidden">
+        <h2>Manage Categories</h2>
+        <div id="categories-list">
+            <!-- Category items will be populated by JavaScript -->
+        </div>
+        <div class="add-category-form">
+            <input type="text" id="new-category-name" placeholder="New Category Name">
+            <button onclick="addCategory()">Add Category</button>
+        </div>
+    </div>
+
+    <!-- PAGE FOR ACCOUNTS -->
     <div id="accounts-page" class="page-content hidden">
         <h2>Manage Accounts</h2>
         <div id="accounts-list"></div>
@@ -56,7 +60,7 @@
         </div>
     </div>
 
-    <!-- PAGE 3: TRANSACTIONS -->
+    <!-- PAGE FOR TRANSACTIONS -->
     <div id="transaction-page" class="page-content hidden">
         <h2>Transactions</h2>
         <div class="filters">
@@ -85,7 +89,6 @@
     <button class="tab-link" onclick="handleTabClick('Transaction', this)">Transaction</button>
 </div>
 
-<!-- Link to the external JavaScript file -->
 <script src="script.js"></script>
 </body>
 </html>
