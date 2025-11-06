@@ -1,0 +1,172 @@
+body { 
+    font-family: 'Arial', sans-serif; 
+    padding: 5px;
+    background-color: #f4f4f4; 
+    color: #333; 
+}
+.container { 
+    max-width: 800px; 
+    margin: auto; 
+    background: #fff; 
+    padding: 10px;
+    border-radius: 8px; 
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    padding-bottom: 80px; 
+}
+h1, h2 { color: #0056b3; text-align: center; }
+
+.balance-container {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+}
+
+.data-card { 
+    flex: 1;
+    min-width: 200px;
+    margin-bottom: 10px; 
+    padding: 20px; 
+    border-radius: 12px; 
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    color: white;
+}
+.data-card h3 { 
+    font-size: 1.1em; 
+    font-weight: bold; 
+    margin-bottom: 5px; 
+}
+.data-card p { margin: 0; font-size: 2.2em; font-weight: bold; }
+
+/* --- STYLES FOR INDIVIDUAL BALANCES --- */
+#individual-balances {
+    margin-top: 15px;
+    font-size: 0.8em;
+    text-align: left;
+    border-top: 1px solid rgba(255, 255, 255, 0.3);
+    padding-top: 10px;
+}
+.balance-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 2px 5px;
+}
+.balance-item span:first-child {
+    font-weight: normal;
+}
+.balance-item span:last-child {
+    font-weight: bold;
+}
+
+.filters { display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; align-items: center; }
+.filters label, .filters input, .filters button { font-size: 1em; }
+.filters button { background-color: #28a745; color: white; border: none; padding: 10px 15px; cursor: pointer; border-radius: 5px; transition: background-color 0.3s ease; }
+.filters button:hover { background-color: #218838; }
+
+.transaction-card {
+    background-color: #f2f2f2;
+    color: #333;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    margin-bottom: 15px;
+    transition: background-color 0.3s ease;
+}
+.card-header, .card-footer {
+     display: flex; justify-content: space-between; align-items: center;
+}
+.card-header { font-weight: bold; font-size: 1.2em; margin-bottom: 5px; }
+.card-footer { font-size: 0.9em; }
+
+.input-form {
+    display: grid;
+    gap: 15px;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid #ddd;
+}
+.input-form input, .input-form select { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+.input-form .full-width { grid-column: 1 / -1; }
+.input-form button {
+    background-color: #007bff; color: white; border: none; padding: 12px 15px;
+    cursor: pointer; border-radius: 5px; transition: background-color 0.3s ease;
+    width: 100%; grid-column: 1 / -1; font-size: 1.1em;
+}
+.input-form button:hover { background-color: #0056b3; }
+
+.message-box {
+    position: fixed; top: 50%; left: 50%;
+    transform: translate(-50%, -50%); background-color: white; padding: 20px;
+    border-radius: 8px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    z-index: 1000; display: none; text-align: center;
+}
+.message-box p { margin: 0 0 15px 0; font-size: 1.1em; }
+.message-box button {
+    background-color: #007bff; color: white; border: none;
+    padding: 8px 15px; cursor: pointer; border-radius: 4px;
+}
+
+.tab-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: space-around;
+    background-color: #ffffff;
+    box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
+    padding: 10px 0;
+    z-index: 100;
+}
+.tab-link {
+    flex: 1;
+    text-align: center;
+    background: none;
+    border: none;
+    font-size: 1em;
+    color: #888;
+    cursor: pointer;
+    padding: 10px 5px;
+    transition: color 0.3s ease;
+}
+.tab-link.active {
+    color: #007bff;
+    font-weight: bold;
+}
+.tab-link:hover {
+    color: #0056b3;
+}
+
+.page-content { display: block; }
+.page-content.hidden { display: none; }
+
+#accounts-page h2 { margin-bottom: 20px; }
+.account-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px;
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 5px;
+    margin-bottom: 10px;
+}
+.remove-btn {
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+.add-account-form {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid #ddd;
+}
+.add-account-form input { flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+.add-account-form button { background-color: #28a745; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; }
