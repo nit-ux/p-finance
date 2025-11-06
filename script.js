@@ -1,6 +1,6 @@
 const webAppUrl = 'https://script.google.com/macros/s/AKfycbzrRUUZcbkIQvX_Noo3zBRODKm34EhkkyowpBVyVxmGFMTGDw1nKCWXgFLKCLetWVY2/exec';
 const ACCOUNTS_STORAGE_KEY = 'cashbookAccounts';
-const CATEGORIES_STORAGE_KEY = 'cashbookCategories'; // New storage key for categories
+const CATEGORIES_STORAGE_KEY = 'cashbookCategories';
 
 let allTransactions = [];
 let currentlyDisplayedCount = 0;
@@ -23,7 +23,7 @@ function handleTabClick(tabName, element) {
     
     if (tabName === 'Home') {
         document.getElementById('home-page').classList.remove('hidden');
-    } else if (tabName === 'Category') { // MODIFIED: Activate Category tab
+    } else if (tabName === 'Category') {
         document.getElementById('category-page').classList.remove('hidden');
         renderCategoriesList();
     } else if (tabName === 'Accounts') {
@@ -32,20 +32,16 @@ function handleTabClick(tabName, element) {
     } else if (tabName === 'Transaction') {
         document.getElementById('transaction-page').classList.remove('hidden');
         fetchData();
-    } else {
-        document.getElementById('home-page').classList.remove('hidden');
-        showMessage(`${tabName} feature is not yet implemented.`);
     }
 }
 
-// --- CATEGORY MANAGEMENT FUNCTIONS (NEW) ---
+// --- CATEGORY MANAGEMENT FUNCTIONS ---
 
 function getCategories() {
     const storedCategories = localStorage.getItem(CATEGORIES_STORAGE_KEY);
     if (storedCategories) {
         return JSON.parse(storedCategories);
     } else {
-        // Default categories if none are stored
         const defaultCategories = ['BY AKD', 'OFFICE ESSENTIAL', 'FOOD', 'PRINT OUT', 'OTHER'];
         localStorage.setItem(CATEGORIES_STORAGE_KEY, JSON.stringify(defaultCategories));
         return defaultCategories;
@@ -54,44 +50,101 @@ function getCategories() {
 
 function saveCategories(categories) {
     localStorage.setItem(CATEGORIES_STORAGE_KEY, JSON.stringify(categories));
-    populateCategoriesDropdown(); // Update dropdown whenever categories change
+    populateCategoriesDropdown();
 }
 
+// MODIFIED: Renders the list with edit/remove buttons
 function renderCategoriesList() {
     const categories = getCategories();
     const listContainer = document.getElementById('categories-list');
-    listContainer.innerHTML = ''; // Clear current list
+    listContainer.innerHTML = '';
     
     categories.forEach(categoryName => {
         const item = document.createElement('div');
         item.className = 'category-item';
+        
+        // The HTML structure for each item now includes an input field (hidden by default)
         item.innerHTML = `
-            <span>${categoryName}</span>
-            <button class="remove-btn" onclick="removeCategory('${categoryName}')">Remove</button>
+            <div class="item-name">
+                <span class="category-name">${categoryName}</span>
+                <input type="text" class="edit-category-input hidden" value="${categoryName}">
+            </div>
+            <div>
+                <button class="edit-btn" onclick="toggleEditCategory('${categoryName}', this)">Edit</button>
+                <button class="remove-btn" onclick="removeCategory('${categoryName}')">Remove</button>
+            </div>
         `;
         listContainer.appendChild(item);
     });
 }
 
+// NEW: Toggles between view and edit mode for a category
+function toggleEditCategory(oldName, editButton) {
+    const itemElement = editButton.closest('.category-item');
+    const nameSpan = itemElement.querySelector('.category-name');
+    const inputField = itemElement.querySelector('.edit-category-input');
+
+    const isEditing = editButton.innerText === 'Save';
+
+    if (isEditing) {
+        // If we are saving, call the update function
+        const newName = inputField.value.trim();
+        updateCategory(oldName, newName); // This will handle validation and re-render the list
+    } else {
+        // If we are editing, switch to input mode
+        nameSpan.classList.add('hidden');
+        inputField.classList.remove('hidden');
+        inputField.focus(); // Automatically focus the input
+        editButton.innerText = 'Save';
+    }
+}
+
+// NEW: Updates a category name after validation
+function updateCategory(oldName, newName) {
+    if (!newName) {
+        showMessage('Category name cannot be empty.');
+        renderCategoriesList(); // Re-render to cancel the edit
+        return;
+    }
+
+    let categories = getCategories();
+    // Check if the new name already exists (and is not the same as the old name, case-insensitive)
+    const isDuplicate = categories.some(c => c.toLowerCase() === newName.toLowerCase() && c.toLowerCase() !== oldName.toLowerCase());
+
+    if (isDuplicate) {
+        showMessage('This category name already exists.');
+        renderCategoriesList(); // Re-render to cancel the edit
+        return;
+    }
+
+    // Find and update the category
+    const categoryIndex = categories.findIndex(c => c === oldName);
+    if (categoryIndex !== -1) {
+        categories[categoryIndex] = newName;
+        saveCategories(categories);
+    }
+    
+    // Re-render the entire list to reflect the change cleanly
+    renderCategoriesList();
+}
+
+
 function addCategory() {
     const input = document.getElementById('new-category-name');
     const newName = input.value.trim();
-    
     if (!newName) {
         showMessage('Category name cannot be empty.');
         return;
     }
-
     const categories = getCategories();
     if (categories.map(c => c.toLowerCase()).includes(newName.toLowerCase())) {
         showMessage('This category name already exists.');
         return;
     }
-    
     categories.push(newName);
     saveCategories(categories);
     renderCategoriesList();
-    input.value = ''; // Clear input field
+    input.value = '';
 }
 
 function removeCategory(categoryNameToRemove) {
@@ -104,7 +157,7 @@ function removeCategory(categoryNameToRemove) {
 function populateCategoriesDropdown() {
     const categories = getCategories();
     const select = document.getElementById('add-category');
-    select.innerHTML = '<option value="" disabled="true" selected="true">Select Category</option>'; // Clear and add default
+    select.innerHTML = '<option value="" disabled="true" selected="true">Select Category</option>';
     
     categories.forEach(categoryName => {
         const option = document.createElement('option');
@@ -142,7 +195,7 @@ function renderAccountsList() {
         const item = document.createElement('div');
         item.className = 'account-item';
         item.innerHTML = `
-            <span>${accountName}</span>
+            <span class="item-name">${accountName}</span>
             <button class="remove-btn" onclick="removeAccount('${accountName}')">Remove</button>
         `;
         listContainer.appendChild(item);
@@ -358,9 +411,8 @@ function addData() {
     });
 }
 
-// --- INITIALIZE APP ON PAGE LOAD ---
 window.onload = () => {
     fetchData(); 
     populatePaymentModesDropdown();
-    populateCategoriesDropdown(); // MODIFIED: Populate categories on load
+    populateCategoriesDropdown();
 };
