@@ -1,4 +1,4 @@
-const webAppUrl = 'https://script.google.com/macros/s/AKfycbxsnpi2-TEDRskcAGwrNcjnBN9JXgvCUHjLqhnQSfp6GdyH36MJCqBjPvxpMfQzY_jfCw/exec';
+const webAppUrl = 'https://script.google.com/macros/s/AKfycbzrRUUZcbkIQvX_Noo3zBRODKm34EhkkyowpBVyVxmGFMTGDw1nKCWXgFLKCLetWVY2/exec';
 const ACCOUNTS_STORAGE_KEY = 'cashbookAccounts';
 const CATEGORIES_STORAGE_KEY = 'cashbookCategories';
 
