@@ -1,10 +1,13 @@
-const webAppUrl = 'https://script.google.com/macros/s/AKfycbzrRUUZcbkIQvX_Noo3zBRODKm34EhkkyowpBVyVxmGFMTGDw1nKCWXgFLKCLetWVY2/exec';
+const webAppUrl = 'https://script.google.com/macros/s/AKfycbxsnpi2-TEDRskcAGwrNcjnBN9JXgvCUHjLqhnQSfp6GdyH36MJCqBjPvxpMfQzY_jfCw/exec';
 const ACCOUNTS_STORAGE_KEY = 'cashbookAccounts';
 const CATEGORIES_STORAGE_KEY = 'cashbookCategories';
 
 let allTransactions = [];
 let currentlyDisplayedCount = 0;
 const transactionsPerLoad = 10;
+// --- NEW: Variables for long press detection ---
+let pressTimer = null;
+let longPressTriggered = false;
 
 function showMessage(message) {
     document.getElementById('messageText').innerText = message;
@@ -16,14 +19,13 @@ function hideMessage() {
 }
 
 function handleTabClick(tabName, element) {
+    resetAllCategoryStates(); // Reset states when changing tabs
     document.querySelectorAll('.tab-link').forEach(tab => tab.classList.remove('active'));
     element.classList.add('active');
-
     document.querySelectorAll('.page-content').forEach(page => page.classList.add('hidden'));
     
-    if (tabName === 'Home') {
-        document.getElementById('home-page').classList.remove('hidden');
-    } else if (tabName === 'Category') {
+    if (tabName === 'Home') document.getElementById('home-page').classList.remove('hidden');
+    else if (tabName === 'Category') {
         document.getElementById('category-page').classList.remove('hidden');
         renderCategoriesList();
     } else if (tabName === 'Accounts') {
@@ -35,17 +37,11 @@ function handleTabClick(tabName, element) {
     }
 }
 
-// --- CATEGORY MANAGEMENT FUNCTIONS ---
+// --- CATEGORY MANAGEMENT ---
 
 function getCategories() {
-    const storedCategories = localStorage.getItem(CATEGORIES_STORAGE_KEY);
-    if (storedCategories) {
-        return JSON.parse(storedCategories);
-    } else {
-        const defaultCategories = ['BY AKD', 'OFFICE ESSENTIAL', 'FOOD', 'PRINT OUT', 'OTHER'];
-        localStorage.setItem(CATEGORIES_STORAGE_KEY, JSON.stringify(defaultCategories));
-        return defaultCategories;
-    }
+    const stored = localStorage.getItem(CATEGORIES_STORAGE_KEY);
+    return stored ? JSON.parse(stored) : ['BY AKD', 'OFFICE ESSENTIAL', 'FOOD', 'PRINT OUT', 'OTHER'];
 }
 
 function saveCategories(categories) {
@@ -53,7 +49,6 @@ function saveCategories(categories) {
     populateCategoriesDropdown();
 }
 
-// MODIFIED: Renders the list with edit/remove buttons
 function renderCategoriesList() {
     const categories = getCategories();
     const listContainer = document.getElementById('categories-list');
@@ -62,84 +57,37 @@ function renderCategoriesList() {
     categories.forEach(categoryName => {
         const item = document.createElement('div');
         item.className = 'category-item';
-        
-        // The HTML structure for each item now includes an input field (hidden by default)
+        item.dataset.categoryName = categoryName; // Store original name
+
         item.innerHTML = `
-            <div class="item-name">
+            <div class="item-content">
                 <span class="category-name">${categoryName}</span>
                 <input type="text" class="edit-category-input hidden" value="${categoryName}">
             </div>
-            <div>
-                <button class="edit-btn" onclick="toggleEditCategory('${categoryName}', this)">Edit</button>
-                <button class="remove-btn" onclick="removeCategory('${categoryName}')">Remove</button>
+            <div class="item-actions">
+                <button class="save-btn hidden" onclick="updateCategory(this)">Save</button>
+                <button class="remove-btn hidden" onclick="removeCategory('${categoryName}')">Remove</button>
             </div>
         `;
+        
+        // --- NEW: Attach event listeners for interaction ---
+        item.addEventListener('mousedown', () => handlePressStart(item));
+        item.addEventListener('mouseup', () => handlePressEnd(item));
+        item.addEventListener('mouseleave', () => cancelPress());
+        item.addEventListener('touchstart', () => handlePressStart(item), { passive: true });
+        item.addEventListener('touchend', () => handlePressEnd(item));
+
         listContainer.appendChild(item);
     });
 }
 
-// NEW: Toggles between view and edit mode for a category
-function toggleEditCategory(oldName, editButton) {
-    const itemElement = editButton.closest('.category-item');
-    const nameSpan = itemElement.querySelector('.category-name');
-    const inputField = itemElement.querySelector('.edit-category-input');
-
-    const isEditing = editButton.innerText === 'Save';
-
-    if (isEditing) {
-        // If we are saving, call the update function
-        const newName = inputField.value.trim();
-        updateCategory(oldName, newName); // This will handle validation and re-render the list
-    } else {
-        // If we are editing, switch to input mode
-        nameSpan.classList.add('hidden');
-        inputField.classList.remove('hidden');
-        inputField.focus(); // Automatically focus the input
-        editButton.innerText = 'Save';
-    }
-}
-
-// NEW: Updates a category name after validation
-function updateCategory(oldName, newName) {
-    if (!newName) {
-        showMessage('Category name cannot be empty.');
-        renderCategoriesList(); // Re-render to cancel the edit
-        return;
-    }
-
-    let categories = getCategories();
-    // Check if the new name already exists (and is not the same as the old name, case-insensitive)
-    const isDuplicate = categories.some(c => c.toLowerCase() === newName.toLowerCase() && c.toLowerCase() !== oldName.toLowerCase());
-
-    if (isDuplicate) {
-        showMessage('This category name already exists.');
-        renderCategoriesList(); // Re-render to cancel the edit
-        return;
-    }
-
-    // Find and update the category
-    const categoryIndex = categories.findIndex(c => c === oldName);
-    if (categoryIndex !== -1) {
-        categories[categoryIndex] = newName;
-        saveCategories(categories);
-    }
-    
-    // Re-render the entire list to reflect the change cleanly
-    renderCategoriesList();
-}
-
-
 function addCategory() {
     const input = document.getElementById('new-category-name');
     const newName = input.value.trim();
-    if (!newName) {
-        showMessage('Category name cannot be empty.');
-        return;
-    }
+    if (!newName) { showMessage('Category name cannot be empty.'); return; }
     const categories = getCategories();
-    if (categories.map(c => c.toLowerCase()).includes(newName.toLowerCase())) {
-        showMessage('This category name already exists.');
-        return;
+    if (categories.some(c => c.toLowerCase() === newName.toLowerCase())) {
+        showMessage('This category name already exists.'); return;
     }
     categories.push(newName);
     saveCategories(categories);
@@ -147,38 +95,83 @@ function addCategory() {
     input.value = '';
 }
 
-function removeCategory(categoryNameToRemove) {
+function removeCategory(name) {
     let categories = getCategories();
-    categories = categories.filter(name => name !== categoryNameToRemove);
+    categories = categories.filter(c => c !== name);
     saveCategories(categories);
     renderCategoriesList();
+}
+
+function updateCategory(saveButton) {
+    const item = saveButton.closest('.category-item');
+    const oldName = item.dataset.categoryName;
+    const input = item.querySelector('.edit-category-input');
+    const newName = input.value.trim();
+
+    if (!newName) { showMessage('Category name cannot be empty.'); return; }
+
+    let categories = getCategories();
+    if (categories.some(c => c.toLowerCase() === newName.toLowerCase() && c.toLowerCase() !== oldName.toLowerCase())) {
+        showMessage('This category name already exists.'); return;
+    }
+
+    const index = categories.findIndex(c => c === oldName);
+    if (index !== -1) categories[index] = newName;
+    
+    saveCategories(categories);
+    renderCategoriesList(); // Re-render to exit edit mode
 }
 
 function populateCategoriesDropdown() {
     const categories = getCategories();
     const select = document.getElementById('add-category');
-    select.innerHTML = '<option value="" disabled="true" selected="true">Select Category</option>';
-    
-    categories.forEach(categoryName => {
-        const option = document.createElement('option');
-        option.value = categoryName;
-        option.innerText = categoryName;
-        select.appendChild(option);
+    select.innerHTML = '<option value="" disabled selected>Select Category</option>';
+    categories.forEach(name => select.innerHTML += `<option value="${name}">${name}</option>`);
+}
+
+// --- NEW: INTERACTION LOGIC FOR CATEGORY ITEMS ---
+function handlePressStart(item) {
+    longPressTriggered = false;
+    pressTimer = setTimeout(() => {
+        longPressTriggered = true;
+        resetAllCategoryStates();
+        item.classList.add('show-remove');
+        item.querySelector('.remove-btn').classList.remove('hidden');
+    }, 2000); // 2 seconds for long press
+}
+
+function handlePressEnd(item) {
+    clearTimeout(pressTimer);
+    if (!longPressTriggered) {
+        // This was a click, not a long press
+        resetAllCategoryStates();
+        item.classList.add('editing');
+        item.querySelector('.category-name').classList.add('hidden');
+        const input = item.querySelector('.edit-category-input');
+        input.classList.remove('hidden');
+        input.focus();
+        item.querySelector('.save-btn').classList.remove('hidden');
+    }
+}
+
+function cancelPress() {
+    clearTimeout(pressTimer);
+}
+
+function resetAllCategoryStates() {
+    document.querySelectorAll('.category-item').forEach(item => {
+        item.classList.remove('editing', 'show-remove');
+        item.querySelector('.category-name').classList.remove('hidden');
+        item.querySelector('.edit-category-input').classList.add('hidden');
+        item.querySelector('.save-btn').classList.add('hidden');
+        item.querySelector('.remove-btn').classList.add('hidden');
     });
 }
 
-
-// --- ACCOUNT MANAGEMENT FUNCTIONS ---
-
+// --- ACCOUNT MANAGEMENT ---
 function getAccounts() {
-    const storedAccounts = localStorage.getItem(ACCOUNTS_STORAGE_KEY);
-    if (storedAccounts) {
-        return JSON.parse(storedAccounts);
-    } else {
-        const defaultAccounts = ['IndusInd (Regular)', 'Cash'];
-        localStorage.setItem(ACCOUNTS_STORAGE_KEY, JSON.stringify(defaultAccounts));
-        return defaultAccounts;
-    }
+    const stored = localStorage.getItem(ACCOUNTS_STORAGE_KEY);
+    return stored ? JSON.parse(stored) : ['IndusInd (Regular)', 'Cash'];
 }
 
 function saveAccounts(accounts) {
@@ -190,29 +183,25 @@ function renderAccountsList() {
     const accounts = getAccounts();
     const listContainer = document.getElementById('accounts-list');
     listContainer.innerHTML = '';
-    
-    accounts.forEach(accountName => {
-        const item = document.createElement('div');
-        item.className = 'account-item';
-        item.innerHTML = `
-            <span class="item-name">${accountName}</span>
-            <button class="remove-btn" onclick="removeAccount('${accountName}')">Remove</button>
+    accounts.forEach(name => {
+        listContainer.innerHTML += `
+            <div class="account-item">
+                <span class="item-content">${name}</span>
+                <div class="item-actions">
+                    <button class="remove-btn" onclick="removeAccount('${name}')">Remove</button>
+                </div>
+            </div>
         `;
-        listContainer.appendChild(item);
     });
 }
 
 function addAccount() {
     const input = document.getElementById('new-account-name');
     const newName = input.value.trim();
-    if (!newName) {
-        showMessage('Account name cannot be empty.');
-        return;
-    }
+    if (!newName) { showMessage('Account name cannot be empty.'); return; }
     const accounts = getAccounts();
-    if (accounts.map(a => a.toLowerCase()).includes(newName.toLowerCase())) {
-        showMessage('This account name already exists.');
-        return;
+    if (accounts.some(a => a.toLowerCase() === newName.toLowerCase())) {
+        showMessage('This account name already exists.'); return;
     }
     accounts.push(newName);
     saveAccounts(accounts);
@@ -220,9 +209,9 @@ function addAccount() {
     input.value = '';
 }
 
-function removeAccount(accountNameToRemove) {
+function removeAccount(name) {
     let accounts = getAccounts();
-    accounts = accounts.filter(name => name !== accountNameToRemove);
+    accounts = accounts.filter(a => a !== name);
     saveAccounts(accounts);
     renderAccountsList();
 }
@@ -230,16 +219,9 @@ function removeAccount(accountNameToRemove) {
 function populatePaymentModesDropdown() {
     const accounts = getAccounts();
     const select = document.getElementById('add-paymentMode');
-    select.innerHTML = '<option value="" disabled="true" selected="true">Payment Mode</option>';
-    
-    accounts.forEach(accountName => {
-        const option = document.createElement('option');
-        option.value = accountName;
-        option.innerText = accountName;
-        select.appendChild(option);
-    });
+    select.innerHTML = '<option value="" disabled selected>Payment Mode</option>';
+    accounts.forEach(name => select.innerHTML += `<option value="${name}">${name}</option>`);
 }
-
 
 // --- CORE CASHBOOK FUNCTIONS ---
 
@@ -255,7 +237,6 @@ function clearFormFields() {
 function fetchData() {
     const startDate = document.getElementById('start-date').value;
     const endDate = document.getElementById('end-date').value;
-    
     const url = new URL(webAppUrl);
     if (startDate) url.searchParams.append('startDate', startDate);
     if (endDate) url.searchParams.append('endDate', endDate);
@@ -274,13 +255,11 @@ function fetchData() {
             for (const accountName of sortedAccounts) {
                 const balance = accountBalances[accountName];
                 totalBalance += balance;
-                const item = document.createElement('div');
-                item.className = 'balance-item';
-                item.innerHTML = `
-                    <span>${accountName}:</span>
-                    <span>${new Intl.NumberFormat('en-IN', currencyFormat).format(balance)}</span>
-                `;
-                individualBalancesContainer.appendChild(item);
+                individualBalancesContainer.innerHTML += `
+                    <div class="balance-item">
+                        <span>${accountName}:</span>
+                        <span>${new Intl.NumberFormat('en-IN', currencyFormat).format(balance)}</span>
+                    </div>`;
             }
 
             totalBalanceElement.innerText = new Intl.NumberFormat('en-IN', currencyFormat).format(totalBalance);
@@ -288,13 +267,9 @@ function fetchData() {
             allTransactions = data.tableRows ? data.tableRows.reverse() : [];
             document.getElementById('data-container').innerHTML = '';
             currentlyDisplayedCount = 0;
-            
             displayTransactions();
         })
-        .catch(error => {
-            console.error('Error fetching data:', error);
-            showMessage('Error fetching data. Check console for details.');
-        });
+        .catch(error => console.error('Error fetching data:', error));
 }
 
 function displayTransactions() {
@@ -303,9 +278,8 @@ function displayTransactions() {
     const currencyFormat = { style: 'currency', currency: 'INR' };
 
     if (allTransactions.length === 0 && currentlyDisplayedCount === 0) {
-        dataContainer.innerHTML = '<p style="text-align:center;">No transactions found for the selected date range.</p>';
-        loadMoreBtn.style.display = 'none';
-        return;
+        dataContainer.innerHTML = '<p style="text-align:center;">No transactions found.</p>';
+        loadMoreBtn.style.display = 'none'; return;
     }
 
     const start = currentlyDisplayedCount;
@@ -313,57 +287,29 @@ function displayTransactions() {
 
     for (let i = start; i < end; i++) {
         const row = allTransactions[i];
-        const dateCell = row[0], typeCell = row[1], categoryCell = row[2], 
-              amountCell = row[3], descriptionCell = row[4];
-
+        const [dateCell, typeCell, categoryCell, amountCell, descriptionCell] = row;
         const card = document.createElement('div');
-        card.classList.add('transaction-card');
-        
-        if (typeCell.toUpperCase() === 'INCOME') {
-            card.style.backgroundColor = '#28a745';
-            card.style.color = 'white';
-        } else {
-            card.style.backgroundColor = '#dc3545';
-            card.style.color = 'white';
-        }
+        card.className = 'transaction-card';
+        card.style.backgroundColor = typeCell.toUpperCase() === 'INCOME' ? '#28a745' : '#dc3545';
+        card.style.color = 'white';
 
-        const header = document.createElement('div');
-        header.classList.add('card-header');
-        const categorySpan = document.createElement('span');
-        categorySpan.innerText = categoryCell;
-        header.appendChild(categorySpan);
-        const amountSpan = document.createElement('span');
-        amountSpan.innerText = new Intl.NumberFormat('en-IN', currencyFormat).format(Math.abs(amountCell));
-        if (card.style.color === 'white') {
-            amountSpan.style.color = 'white';
-        }
-        header.appendChild(amountSpan);
-        card.appendChild(header);
-
-        const footer = document.createElement('div');
-        footer.classList.add('card-footer');
-        const descriptionSpan = document.createElement('span');
-        descriptionSpan.innerText = descriptionCell;
-        footer.appendChild(descriptionSpan);
         const date = new Date(dateCell);
-        const day = String(date.getDate()).padStart(2, '0');
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const year = date.getFullYear();
-        const dateSpan = document.createElement('span');
-        dateSpan.innerText = `${day}-${month}-${year}`;
-        footer.appendChild(dateSpan);
-        card.appendChild(footer);
-
+        const formattedDate = `${String(date.getDate()).padStart(2, '0')}-${String(date.getMonth() + 1).padStart(2, '0')}-${date.getFullYear()}`;
+        
+        card.innerHTML = `
+            <div class="card-header">
+                <span>${categoryCell}</span>
+                <span>${new Intl.NumberFormat('en-IN', currencyFormat).format(Math.abs(amountCell))}</span>
+            </div>
+            <div class="card-footer">
+                <span>${descriptionCell}</span>
+                <span>${formattedDate}</span>
+            </div>
+        `;
         dataContainer.appendChild(card);
     }
-
     currentlyDisplayedCount = end;
-
-    if (currentlyDisplayedCount < allTransactions.length) {
-        loadMoreBtn.style.display = 'inline-block';
-    } else {
-        loadMoreBtn.style.display = 'none';
-    }
+    loadMoreBtn.style.display = currentlyDisplayedCount < allTransactions.length ? 'inline-block' : 'none';
 }
 
 function loadMore() {
@@ -379,8 +325,7 @@ function addData() {
     const paymentMode = document.getElementById('add-paymentMode').value;
 
     if (!date || !type || !category || !amount || !description || !paymentMode) {
-        showMessage('Please fill all required fields.');
-        return;
+        showMessage('Please fill all required fields.'); return;
     }
 
     const formData = new FormData();
@@ -391,24 +336,18 @@ function addData() {
     formData.append('description', description);
     formData.append('paymentMode', paymentMode);
 
-    fetch(webAppUrl, {
-        method: 'POST',
-        body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.status === "success") {
-            showMessage('Data added successfully!');
-            clearFormFields();
-            fetchData(); 
-        } else {
-            showMessage('Failed to add data.');
-        }
-    })
-    .catch(error => {
-        console.error('Error adding data:', error);
-        showMessage('Error adding data.');
-    });
+    fetch(webAppUrl, { method: 'POST', body: formData })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === "success") {
+                showMessage('Data added successfully!');
+                clearFormFields();
+                fetchData(); 
+            } else {
+                showMessage('Failed to add data.');
+            }
+        })
+        .catch(error => console.error('Error adding data:', error));
 }
 
 window.onload = () => {
