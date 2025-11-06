@@ -39,7 +39,6 @@ h1, h2 { color: #0056b3; text-align: center; }
 }
 .data-card p { margin: 0; font-size: 2.2em; font-weight: bold; }
 
-/* --- STYLES FOR INDIVIDUAL BALANCES --- */
 #individual-balances {
     margin-top: 15px;
     font-size: 0.8em;
@@ -142,8 +141,10 @@ h1, h2 { color: #0056b3; text-align: center; }
 .page-content { display: block; }
 .page-content.hidden { display: none; }
 
-#accounts-page h2 { margin-bottom: 20px; }
-.account-item {
+/* --- REUSED STYLES FOR CATEGORY & ACCOUNT MANAGEMENT --- */
+#accounts-page h2, #category-page h2 { margin-bottom: 20px; }
+
+.account-item, .category-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -161,12 +162,24 @@ h1, h2 { color: #0056b3; text-align: center; }
     border-radius: 4px;
     cursor: pointer;
 }
-.add-account-form {
+.add-account-form, .add-category-form {
     display: flex;
     gap: 10px;
     margin-top: 20px;
     padding-top: 20px;
     border-top: 1px solid #ddd;
 }
-.add-account-form input { flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
-.add-account-form button { background-color: #28a745; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; }
+.add-account-form input, .add-category-form input { 
+    flex: 1; 
+    padding: 8px; 
+    border: 1px solid #ccc; 
+    border-radius: 4px; 
+}
+.add-account-form button, .add-category-form button { 
+    background-color: #28a745; 
+    color: white; 
+    border: none; 
+    padding: 8px 15px; 
+    border-radius: 4px; 
+    cursor: pointer; 
+}
