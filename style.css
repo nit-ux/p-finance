@@ -141,7 +141,6 @@ h1, h2 { color: #0056b3; text-align: center; }
 .page-content { display: block; }
 .page-content.hidden { display: none; }
 
-/* --- REUSED STYLES FOR CATEGORY & ACCOUNT MANAGEMENT --- */
 #accounts-page h2, #category-page h2 { margin-bottom: 20px; }
 
 .account-item, .category-item {
@@ -162,6 +161,25 @@ h1, h2 { color: #0056b3; text-align: center; }
     border-radius: 4px;
     cursor: pointer;
 }
+/* --- NEW STYLES FOR EDIT FUNCTIONALITY --- */
+.edit-btn {
+    background-color: #ffc107; /* Yellow */
+    color: black;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-right: 5px;
+}
+.edit-category-input {
+    border: 1px solid #007bff;
+    padding: 4px;
+    border-radius: 4px;
+}
+.item-name {
+    flex-grow: 1; /* Allows name to take up available space */
+}
+
 .add-account-form, .add-category-form {
     display: flex;
     gap: 10px;
