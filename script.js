@@ -1,5 +1,6 @@
 const webAppUrl = 'https://script.google.com/macros/s/AKfycbzrRUUZcbkIQvX_Noo3zBRODKm34EhkkyowpBVyVxmGFMTGDw1nKCWXgFLKCLetWVY2/exec';
 const ACCOUNTS_STORAGE_KEY = 'cashbookAccounts';
+const CATEGORIES_STORAGE_KEY = 'cashbookCategories'; // New storage key for categories
 
 let allTransactions = [];
 let currentlyDisplayedCount = 0;
@@ -22,6 +23,9 @@ function handleTabClick(tabName, element) {
     
     if (tabName === 'Home') {
         document.getElementById('home-page').classList.remove('hidden');
+    } else if (tabName === 'Category') { // MODIFIED: Activate Category tab
+        document.getElementById('category-page').classList.remove('hidden');
+        renderCategoriesList();
     } else if (tabName === 'Accounts') {
         document.getElementById('accounts-page').classList.remove('hidden');
         renderAccountsList();
@@ -33,6 +37,85 @@ function handleTabClick(tabName, element) {
         showMessage(`${tabName} feature is not yet implemented.`);
     }
 }
+
+// --- CATEGORY MANAGEMENT FUNCTIONS (NEW) ---
+
+function getCategories() {
+    const storedCategories = localStorage.getItem(CATEGORIES_STORAGE_KEY);
+    if (storedCategories) {
+        return JSON.parse(storedCategories);
+    } else {
+        // Default categories if none are stored
+        const defaultCategories = ['BY AKD', 'OFFICE ESSENTIAL', 'FOOD', 'PRINT OUT', 'OTHER'];
+        localStorage.setItem(CATEGORIES_STORAGE_KEY, JSON.stringify(defaultCategories));
+        return defaultCategories;
+    }
+}
+
+function saveCategories(categories) {
+    localStorage.setItem(CATEGORIES_STORAGE_KEY, JSON.stringify(categories));
+    populateCategoriesDropdown(); // Update dropdown whenever categories change
+}
+
+function renderCategoriesList() {
+    const categories = getCategories();
+    const listContainer = document.getElementById('categories-list');
+    listContainer.innerHTML = ''; // Clear current list
+    
+    categories.forEach(categoryName => {
+        const item = document.createElement('div');
+        item.className = 'category-item';
+        item.innerHTML = `
+            <span>${categoryName}</span>
+            <button class="remove-btn" onclick="removeCategory('${categoryName}')">Remove</button>
+        `;
+        listContainer.appendChild(item);
+    });
+}
+
+function addCategory() {
+    const input = document.getElementById('new-category-name');
+    const newName = input.value.trim();
+    
+    if (!newName) {
+        showMessage('Category name cannot be empty.');
+        return;
+    }
+
+    const categories = getCategories();
+    if (categories.map(c => c.toLowerCase()).includes(newName.toLowerCase())) {
+        showMessage('This category name already exists.');
+        return;
+    }
+    
+    categories.push(newName);
+    saveCategories(categories);
+    renderCategoriesList();
+    input.value = ''; // Clear input field
+}
+
+function removeCategory(categoryNameToRemove) {
+    let categories = getCategories();
+    categories = categories.filter(name => name !== categoryNameToRemove);
+    saveCategories(categories);
+    renderCategoriesList();
+}
+
+function populateCategoriesDropdown() {
+    const categories = getCategories();
+    const select = document.getElementById('add-category');
+    select.innerHTML = '<option value="" disabled="true" selected="true">Select Category</option>'; // Clear and add default
+    
+    categories.forEach(categoryName => {
+        const option = document.createElement('option');
+        option.value = categoryName;
+        option.innerText = categoryName;
+        select.appendChild(option);
+    });
+}
+
+
+// --- ACCOUNT MANAGEMENT FUNCTIONS ---
 
 function getAccounts() {
     const storedAccounts = localStorage.getItem(ACCOUNTS_STORAGE_KEY);
@@ -104,6 +187,9 @@ function populatePaymentModesDropdown() {
     });
 }
 
+
+// --- CORE CASHBOOK FUNCTIONS ---
+
 function clearFormFields() {
     document.getElementById('add-date').value = '';
     document.getElementById('add-type').selectedIndex = 0;
@@ -125,20 +211,16 @@ function fetchData() {
         .then(response => response.json())
         .then(data => {
             const currencyFormat = { style: 'currency', currency: 'INR' };
-            
             const accountBalances = data.accountBalances || {};
             const totalBalanceElement = document.getElementById('total-balance');
             const individualBalancesContainer = document.getElementById('individual-balances');
-            
             let totalBalance = 0;
             individualBalancesContainer.innerHTML = '';
-
             const sortedAccounts = Object.keys(accountBalances).sort();
 
             for (const accountName of sortedAccounts) {
                 const balance = accountBalances[accountName];
                 totalBalance += balance;
-                
                 const item = document.createElement('div');
                 item.className = 'balance-item';
                 item.innerHTML = `
@@ -179,7 +261,7 @@ function displayTransactions() {
     for (let i = start; i < end; i++) {
         const row = allTransactions[i];
         const dateCell = row[0], typeCell = row[1], categoryCell = row[2], 
-              amountCell = row[3], descriptionCell = row[4], paymentModeCell = row[5] || ''; 
+              amountCell = row[3], descriptionCell = row[4];
 
         const card = document.createElement('div');
         card.classList.add('transaction-card');
@@ -276,7 +358,9 @@ function addData() {
     });
 }
 
+// --- INITIALIZE APP ON PAGE LOAD ---
 window.onload = () => {
     fetchData(); 
     populatePaymentModesDropdown();
+    populateCategoriesDropdown(); // MODIFIED: Populate categories on load
 };
