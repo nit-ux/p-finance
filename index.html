@@ -62,13 +62,31 @@
         
         <!-- PAGE FOR CATEGORIES -->
         <div id="category-page" class="page-content hidden">
-            <h2>Manage Categories</h2>
-            <div id="categories-list"></div>
-            <div class="add-category-form">
-                <input type="text" id="new-category-name" placeholder="New Category Name">
-                <button onclick="addCategory()">Add Category</button>
-            </div>
-        </div>
+        <h2>Manage Categories</h2>
+
+<!-- Naya Tabbed Interface -->
+<div class="category-tabs">
+    <button class="cat-tab-btn active" onclick="handleCategoryTabClick('EXPENSE', this)">Expenses</button>
+    <button class="cat-tab-btn" onclick="handleCategoryTabClick('INCOME', this)">Income</button>
+</div>
+
+<!-- Expense Categories ke liye Content -->
+<div id="expense-categories-content" class="category-content active">
+    <div id="expense-categories-list"></div>
+    <div class="add-category-form">
+        <input type="text" id="new-expense-category-name" placeholder="New Expense Category">
+        <button onclick="addCategory('EXPENSE')">Add Expense Category</button>
+    </div>
+</div>
+
+<!-- Income Categories ke liye Content -->
+<div id="income-categories-content" class="category-content">
+    <div id="income-categories-list"></div>
+    <div class="add-category-form">
+        <input type="text" id="new-income-category-name" placeholder="New Income Category">
+        <button onclick="addCategory('INCOME')">Add Income Category</button>
+    </div>
+</div>
 
         <!-- PAGE FOR ACCOUNTS -->
         <div id="accounts-page" class="page-content hidden">
