@@ -917,3 +917,42 @@ h1, h2 {
     height: 22px;
     fill: rgba(255, 255, 255, 0.8); /* Icon ka halka safed color */
 }
+/* NAYA CSS CODE (Aakhir mein paste karein) */
+
+/* --- Category Page Tabs --- */
+.category-tabs {
+    display: flex;
+    border-bottom: 2px solid #ddd;
+    margin-bottom: 20px;
+}
+
+.cat-tab-btn {
+    flex: 1;
+    background: none;
+    border: none;
+    padding: 15px;
+    font-size: 1.1em;
+    cursor: pointer;
+    position: relative;
+    color: #555;
+}
+.cat-tab-btn.active {
+    font-weight: bold;
+    color: #007bff;
+}
+.cat-tab-btn.active::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background-color: #007bff;
+}
+
+.category-content {
+    display: none; /* Default mein sabhi content hidden */
+}
+.category-content.active {
+    display: block; /* Sirf active content dikhega */
+}
