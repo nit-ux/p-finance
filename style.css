@@ -382,3 +382,14 @@ h1, h2 { color: #0056b3; text-align: center; }
     flex-grow: 1; /* Yeh search bar ko bachi hui jagah de dega */
     min-width: 150px;
 }
+/* NAYA CSS CODE (Aakhir mein paste karein) */
+
+.chart-container {
+    width: 100%;
+    max-width: 400px; /* Chart ka max size */
+    margin: 25px auto; /* Upar-neeche margin aur center align */
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+    border-top: 1px solid #eee;
+}
