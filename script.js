@@ -632,14 +632,33 @@ async function populatePomodoroTaskSelect() {
 async function startPomodoro() {
     const taskId = document.getElementById('pomodoro-task-select').value;
     if (!taskId) { showMessage("Please select a task."); return; }
+
     let updates = {};
     if (currentPomodoroTask && currentPomodoroTask.pomodoro_state === 'paused') {
+        // RESUME from pause
         const timeLeft = currentPomodoroTask.pomodoro_time_left_on_pause;
-        updates = { pomodoro_state: 'running', pomodoro_start_time: new Date(Date.now() - ((25 * 60) - timeLeft) * 1000) };
+        updates = {
+            pomodoro_state: 'running',
+            // .toISOString() add kiya gaya hai
+            pomodoro_start_time: new Date(Date.now() - ((25 * 60) - timeLeft) * 1000).toISOString(),
+        };
     } else {
-        updates = { pomodoro_state: 'running', pomodoro_start_time: new Date(), pomodoro_time_left_on_pause: null };
+        // START new session
+        updates = {
+            pomodoro_state: 'running',
+            // .toISOString() add kiya gaya hai
+            pomodoro_start_time: new Date().toISOString(),
+            pomodoro_time_left_on_pause: null,
+        };
     }
-    await supabaseClient.from('tasks').update(updates).eq('id', taskId);
+
+    const { error } = await supabaseClient.from('tasks').update(updates).eq('id', taskId);
+
+    if (error) {
+        // Error ko behtar tarike se handle karein
+        console.error("Error starting pomodoro:", error);
+        showMessage(`Error: Could not start timer. ${error.message}`);
+    }
 }
 async function pausePomodoro() {
     if (!currentPomodoroTask || currentPomodoroTask.pomodoro_state !== 'running') return;
