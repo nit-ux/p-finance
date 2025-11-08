@@ -388,7 +388,105 @@ async function renderExpenseChart(transactions) {
     });
 }
 
-// YEH DO NAYE FUNCTIONS ADD KAREIN
+// --- MODAL LOGIC START ---
+
+let selectedModalType = 'EXPENSE'; // Default type
+let selectedModalAccount = null;
+let selectedModalCategory = null;
+
+// Modal mein accounts (payment modes) ko populate karega
+async function populateAccountsInModal() {
+    const accounts = await getAccounts();
+    const container = document.getElementById('modal-accounts-selector');
+    container.innerHTML = '';
+    accounts.forEach(acc => {
+        const item = document.createElement('div');
+        item.className = 'selector-item';
+        item.innerText = acc.name;
+        item.dataset.name = acc.name;
+        
+        item.onclick = () => {
+            // Pehle sabse 'active' class hatao
+            container.querySelectorAll('.selector-item').forEach(el => el.classList.remove('active'));
+            // Fir is par 'active' class lagao
+            item.classList.add('active');
+            selectedModalAccount = item.dataset.name;
+        };
+        container.appendChild(item);
+    });
+}
+
+// Modal mein categories ko populate karega
+async function populateCategoriesInModal() {
+    const categories = await getCategories();
+    const container = document.getElementById('modal-categories-selector');
+    container.innerHTML = '';
+    categories.forEach(catName => {
+        const item = document.createElement('div');
+        item.className = 'selector-item';
+        item.innerText = catName;
+        item.dataset.name = catName;
+
+        item.onclick = () => {
+            container.querySelectorAll('.selector-item').forEach(el => el.classList.remove('active'));
+            item.classList.add('active');
+            selectedModalCategory = item.dataset.name;
+        };
+        container.appendChild(item);
+    });
+}
+
+// Modal se data save karega
+async function saveTransactionFromModal() {
+    const date = document.getElementById('modal-date').value;
+    const amount = parseFloat(document.getElementById('modal-amount').value);
+    const description = document.getElementById('modal-description').value;
+    const userId = await getCurrentUserId();
+
+    // Validation
+    if (!userId || !date || !amount || !description || !selectedModalAccount || !selectedModalCategory) {
+        showMessage('Please fill all fields and select an account/category.');
+        return;
+    }
+
+    showSpinner();
+    try {
+        const { error } = await supabaseClient.from('transactions').insert([{ 
+            transaction_date: date, 
+            type: selectedModalType, 
+            category: selectedModalCategory, 
+            amount: Math.abs(amount), 
+            notes: description, 
+            payment_mode: selectedModalAccount, 
+            user_id: userId 
+        }]);
+        if (error) throw error;
+        
+        hideModal();
+        showMessage('Transaction added successfully!');
+        await fetchData(); // Data refresh karo
+    } catch (error) {
+        showMessage(`Failed to add transaction: ${error.message}`);
+    } finally {
+        hideSpinner();
+    }
+}
+
+function showModal() {
+    // Modal kholne se pehle default values set karo
+    document.getElementById('modal-date').valueAsDate = new Date();
+    document.getElementById('modal-amount').value = '';
+    document.getElementById('modal-description').value = '';
+    selectedModalAccount = null;
+    selectedModalCategory = null;
+    populateAccountsInModal();
+    populateCategoriesInModal();
+    document.getElementById('transaction-modal-overlay').classList.add('active');
+}
+
+function hideModal() {
+    document.getElementById('transaction-modal-overlay').classList.remove('active');
+}
 
 // Yeh function buttons ke click ko handle karega
 function handleChartFilterClick(filterType) {
