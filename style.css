@@ -162,7 +162,11 @@ h1, h2 {
     padding-top: 20px; border-top: 1px solid #ddd;
 }
 .add-account-form input, .add-category-form input { 
-    flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 4px; 
+    flex: 1; /* Yeh dono inputs ko barabar jagah dega */
+    padding: 8px; 
+    border: 1px solid #ccc; 
+    border-radius: 4px; 
+    min-width: 120px; /* Inputs ko bahut chhota hone se rokein */
 }
 .add-account-form button, .add-category-form button { 
     background-color: #28a745; color: white; border: none; 
