@@ -18,9 +18,7 @@ let accountLongPressTriggered = false;
 let expenseChartInstance = null;
 let allTimeTransactions = [];
 let pomodoroInterval = null;
-let pomodoroTimeLeft = 25 * 60; // 25 minutes in seconds
-let pomodoroState = 'stopped'; // 'stopped', 'running', 'paused'
-let pomodoroMode = 'work'; // 'work', 'break'
+let currentPomodoroTask = null; // Ismein poora task object store hoga
 
 // ====== AUTHENTICATION & SECURITY CHECK ======
 supabaseClient.auth.onAuthStateChange((event, session) => {
@@ -753,124 +751,135 @@ async function deleteTask(taskId) {
 
 function initializePomodoroPage() {
     populatePomodoroTaskSelect();
-    resetPomodoro(); // Timer ko default state mein set karo
+    resetPomodoroUI(); // Sirf UI ko reset karo
 }
 
 // Dropdown ko incomplete tasks se bharega
 async function populatePomodoroTaskSelect() {
     const select = document.getElementById('pomodoro-task-select');
-    select.innerHTML = '<option value="">-- Choose a task --</option>';
+    const { data: tasks } = await supabaseClient
+        .from('tasks').select('id, title').eq('is_completed', false);
     
-    const { data: tasks, error } = await supabaseClient
-        .from('tasks')
-        .select('id, title')
-        .eq('is_completed', false); // Sirf incomplete tasks
-
-    if (error) { console.error(error); return; }
-
+    if (!tasks) return;
+    
+    const currentSelection = select.value;
+    select.innerHTML = '<option value="">-- Choose a task --</option>';
     tasks.forEach(task => {
         select.innerHTML += `<option value="${task.id}">${task.title}</option>`;
     });
+    select.value = currentSelection; // Purani selection ko yaad rakho
 }
 
-// Timer ko start ya resume karega
-function startPomodoro() {
-    const selectedTaskId = document.getElementById('pomodoro-task-select').value;
-    if (!selectedTaskId) {
-        showMessage("Please select a task before starting the timer.");
-        return;
+// START button dabaane par database ko update karega
+async function startPomodoro() {
+    const taskId = document.getElementById('pomodoro-task-select').value;
+    if (!taskId) { showMessage("Please select a task."); return; }
+
+    let updates = {};
+    if (currentPomodoroTask && currentPomodoroTask.pomodoro_state === 'paused') {
+        // RESUME from pause
+        const timeLeft = currentPomodoroTask.pomodoro_time_left_on_pause;
+        updates = {
+            pomodoro_state: 'running',
+            pomodoro_start_time: new Date(Date.now() - ((25 * 60) - timeLeft) * 1000), // Start time ko adjust karo
+        };
+    } else {
+        // START new session
+        updates = {
+            pomodoro_state: 'running',
+            pomodoro_start_time: new Date(),
+            pomodoro_time_left_on_pause: null,
+        };
     }
 
-    if (pomodoroState === 'running') return; // Agar pehle se chal raha hai to kuch mat karo
-
-    pomodoroState = 'running';
-    document.getElementById('pomodoro-start-btn').classList.add('hidden');
-    document.getElementById('pomodoro-pause-btn').classList.remove('hidden');
-
-    pomodoroInterval = setInterval(updatePomodoroTimer, 1000);
+    await supabaseClient.from('tasks').update(updates).eq('id', taskId);
 }
 
-// Timer ko pause karega
-function pausePomodoro() {
-    if (pomodoroState !== 'running') return;
-    pomodoroState = 'paused';
-    clearInterval(pomodoroInterval);
+// PAUSE button dabaane par database ko update karega
+async function pausePomodoro() {
+    if (!currentPomodoroTask || currentPomodoroTask.pomodoro_state !== 'running') return;
 
-    document.getElementById('pomodoro-start-btn').innerText = 'Resume';
-    document.getElementById('pomodoro-start-btn').classList.remove('hidden');
-    document.getElementById('pomodoro-pause-btn').classList.add('hidden');
+    const elapsed = (Date.now() - new Date(currentPomodoroTask.pomodoro_start_time).getTime()) / 1000;
+    const timeLeft = Math.round((25 * 60) - elapsed);
+
+    await supabaseClient.from('tasks').update({
+        pomodoro_state: 'paused',
+        pomodoro_time_left_on_pause: timeLeft
+    }).eq('id', currentPomodoroTask.id);
 }
 
-// Timer ko reset karega
-function resetPomodoro() {
+// RESET button dabaane par database ko update karega
+async function resetPomodoro() {
+    const taskId = document.getElementById('pomodoro-task-select').value;
+    if (!taskId) { resetPomodoroUI(); return; }
+
+    await supabaseClient.from('tasks').update({
+        pomodoro_state: 'stopped',
+        pomodoro_start_time: null,
+        pomodoro_time_left_on_pause: null
+    }).eq('id', taskId);
+}
+
+// Sirf UI ko reset karega
+function resetPomodoroUI() {
     clearInterval(pomodoroInterval);
-    pomodoroState = 'stopped';
-    pomodoroMode = 'work';
-    pomodoroTimeLeft = 25 * 60; // 25 minutes
-    
-    updateTimerDisplay();
-    document.getElementById('pomodoro-container').classList.remove('break-time');
+    document.getElementById('pomodoro-timer-display').innerText = '25:00';
     document.getElementById('pomodoro-start-btn').innerText = 'Start';
     document.getElementById('pomodoro-start-btn').classList.remove('hidden');
     document.getElementById('pomodoro-pause-btn').classList.add('hidden');
+    document.getElementById('pomodoro-container').classList.remove('break-time');
 }
 
-// Har second timer ko update karega
-function updatePomodoroTimer() {
-    pomodoroTimeLeft--;
-    updateTimerDisplay();
+// Realtime se mile data ke hisab se UI ko update karega
+function handlePomodoroUpdate(task) {
+    currentPomodoroTask = task;
+    clearInterval(pomodoroInterval); // Hamesha purana interval clear karo
 
-    if (pomodoroTimeLeft <= 0) {
-        clearInterval(pomodoroInterval);
-        document.getElementById('alarm-sound').play();
-        
-        if (pomodoroMode === 'work') {
-            pomodoroMode = 'break';
-            pomodoroTimeLeft = 5 * 60; // 5 minute ka break
-            document.getElementById('pomodoro-container').classList.add('break-time');
-            // Hum yahan `time_logs` table mein ek entry add kar sakte hain
-            logPomodoroSession();
-        } else {
-            pomodoroMode = 'work';
-            pomodoroTimeLeft = 25 * 60; // Naya work session
-            document.getElementById('pomodoro-container').classList.remove('break-time');
-        }
-        
-        pomodoroState = 'stopped';
-        document.getElementById('pomodoro-start-btn').innerText = 'Start';
-        document.getElementById('pomodoro-start-btn').classList.remove('hidden');
-        document.getElementById('pomodoro-pause-btn').classList.add('hidden');
-        
-        updateTimerDisplay();
+    // Break time logic (yeh abhi simplified hai)
+    // if (task.pomodoro_mode === 'break') { ... }
+
+    switch (task.pomodoro_state) {
+        case 'running':
+            const startTime = new Date(task.pomodoro_start_time).getTime();
+            const endTime = startTime + (25 * 60 * 1000);
+
+            pomodoroInterval = setInterval(() => {
+                const now = Date.now();
+                const timeLeft = Math.round((endTime - now) / 1000);
+                
+                if (timeLeft <= 0) {
+                    clearInterval(pomodoroInterval);
+                    document.getElementById('alarm-sound').play();
+                    resetPomodoro(); // Auto-reset
+                    // Yahan break start karne ka logic bhi aa sakta hai
+                    return;
+                }
+                updateTimerDisplay(timeLeft);
+            }, 1000);
+
+            document.getElementById('pomodoro-start-btn').classList.add('hidden');
+            document.getElementById('pomodoro-pause-btn').classList.remove('hidden');
+            break;
+
+        case 'paused':
+            updateTimerDisplay(task.pomodoro_time_left_on_pause);
+            document.getElementById('pomodoro-start-btn').innerText = 'Resume';
+            document.getElementById('pomodoro-start-btn').classList.remove('hidden');
+            document.getElementById('pomodoro-pause-btn').classList.add('hidden');
+            break;
+
+        default: // 'stopped' or null
+            resetPomodoroUI();
+            break;
     }
 }
 
 // Screen par time (MM:SS) format mein dikhayega
-function updateTimerDisplay() {
-    const minutes = Math.floor(pomodoroTimeLeft / 60);
-    const seconds = pomodoroTimeLeft % 60;
+function updateTimerDisplay(totalSeconds) {
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
     document.getElementById('pomodoro-timer-display').innerText = 
         `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-}
-
-// (Optional but Recommended) Ek work session ko database mein log karega
-async function logPomodoroSession() {
-    const taskId = document.getElementById('pomodoro-task-select').value;
-    const userId = await getCurrentUserId();
-    if (!taskId || !userId) return;
-
-    try {
-        const { error } = await supabaseClient.from('time_logs').insert({
-            task_id: taskId,
-            user_id: userId,
-            start_time: new Date(Date.now() - 25 * 60 * 1000), // 25 min pehle
-            end_time: new Date() // Abhi
-        });
-        if (error) throw error;
-        console.log("Pomodoro session logged!");
-    } catch (error) {
-        console.error("Failed to log session:", error);
-    }
 }
 
 function toggleCompletedTasks() {
@@ -1082,6 +1091,23 @@ function resetAllAccountStates() {
     });
 }
 
+function initializeRealtimeSubscriptions() {
+    console.log("Initializing realtime subscriptions...");
+
+    // Jab bhi transactions, accounts, ya categories mein badlav ho, to fetchData() call karo
+    const tasksSubscription = supabaseClient.channel('public:tasks')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, (payload) => {
+        // Task list ko hamesha refresh karo
+        renderTasks();
+
+        // Agar badlav Pomodoro page par selected task mein hua hai, to timer update karo
+        const selectedTaskId = document.getElementById('pomodoro-task-select').value;
+        if (payload.new.id == selectedTaskId) {
+            handlePomodoroUpdate(payload.new);
+        }
+    })
+    .subscribe();
+
 // ====== APP INITIALIZATION ======
 // PURANE initializeApp KO ISSE REPLACE KAREIN
 function initializeApp() {
@@ -1090,6 +1116,7 @@ function initializeApp() {
     populateCategoryFilter();
     populateAccountFilter();
     handleChartFilterClick('thisMonth');
+    initializeRealtimeSubscriptions();
     
     // --- SIDEBAR EVENT LISTENERS ---
     document.getElementById('menu-btn').onclick = openSidebar;
@@ -1097,6 +1124,18 @@ function initializeApp() {
     document.getElementById('completed-tasks-header').onclick = toggleCompletedTasks;
     window.toggleBalanceVisibility = toggleBalanceVisibility;
     document.getElementById('pomodoro-start-btn').onclick = startPomodoro;
+    document.getElementById('pomodoro-task-select').onchange = async (e) => {
+        const taskId = e.target.value;
+        if (!taskId) {
+            resetPomodoroUI();
+            currentPomodoroTask = null;
+            return;
+        }
+        const { data: task } = await supabaseClient.from('tasks').select('*').eq('id', taskId).single();
+        if (task) {
+            handlePomodoroUpdate(task);
+        }
+    };
     document.getElementById('pomodoro-pause-btn').onclick = pausePomodoro;
     document.getElementById('pomodoro-reset-btn').onclick = resetPomodoro;
 
