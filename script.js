@@ -14,6 +14,7 @@ let longPressTriggered = false;
 let accountPressTimer = null; // For accounts
 let accountLongPressTriggered = false;
 let expenseChartInstance = null;
+let allTimeTransactions = [];
 
 // ====== AUTHENTICATION & SECURITY CHECK ======
 supabaseClient.auth.onAuthStateChange((event, session) => {
@@ -387,23 +388,78 @@ async function renderExpenseChart(transactions) {
     });
 }
 
+// YEH DO NAYE FUNCTIONS ADD KAREIN
+
+// Yeh function buttons ke click ko handle karega
+function handleChartFilterClick(filterType) {
+    // Sabhi buttons se 'active' class hatao
+    document.querySelectorAll('.chart-filter-btn').forEach(btn => btn.classList.remove('active'));
+
+    const startDateInput = document.getElementById('chart-start-date');
+    const endDateInput = document.getElementById('chart-end-date');
+    const today = new Date();
+
+    if (filterType === 'thisMonth') {
+        document.getElementById('btn-this-month').classList.add('active');
+        // Is mahine ki pehli तारीख
+        const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+        // Is mahine ki aakhri तारीख
+        const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+
+        startDateInput.valueAsDate = firstDay;
+        endDateInput.valueAsDate = lastDay;
+    } else if (filterType === 'allTime') {
+        document.getElementById('btn-all-time').classList.add('active');
+        // Dates ko khaali kar do taaki koi filter na lage
+        startDateInput.value = '';
+        endDateInput.value = '';
+    }
+    
+    // Naya function call karo jo chart ko update karega
+    updateChartData();
+}
+
+// Yeh function chart ke liye data filter karke use render karega
+function updateChartData() {
+    const startDate = document.getElementById('chart-start-date').value;
+    const endDate = document.getElementById('chart-end-date').value;
+
+    let transactionsForChart = allTimeTransactions;
+
+    // Agar dates select ki gayi hain, to data filter karo
+    if (startDate && endDate) {
+        transactionsForChart = allTimeTransactions.filter(tx => {
+            const txDate = new Date(tx.transaction_date);
+            return txDate >= new Date(startDate) && txDate <= new Date(endDate);
+        });
+    }
+    
+    // Chart ko naye filtered data ke saath render karo
+    renderExpenseChart(transactionsForChart);
+}
+
+// YAHAN TAK ADD KAREIN
+// NAYA AUR FINAL fetchData FUNCTION (ISE PASTE KAREIN)
 async function fetchData() {
     showSpinner();
     try {
-        // Balance calculation waala hissa same rahega
-        const accountsData = await getAccounts();
-        const { data: allTxData, error: allTxError } = await supabaseClient.from('transactions').select('amount, payment_mode, type');
-        if (allTxError) throw allTxError;
+        // Step 1: BINA KISI FILTER ke saare transactions fetch karo
+        const { data, error } = await supabaseClient.from('transactions').select('*');
+        if (error) throw error;
+        allTimeTransactions = data || []; // Saare data ko global variable mein store karo
 
+        // Balance calculation ab 'allTimeTransactions' se hoga
+        const accountsData = await getAccounts();
         const balances = {};
         accountsData.forEach(acc => { balances[acc.name] = acc.initial_balance || 0; });
-        allTxData.forEach(tx => {
+        allTimeTransactions.forEach(tx => {
             if (balances[tx.payment_mode] !== undefined) {
-                 if (tx.type.toUpperCase() === 'INCOME') balances[tx.payment_mode] += Math.abs(tx.amount);
-                 else if (tx.type.toUpperCase() === 'EXPENSE') balances[tx.payment_mode] -= Math.abs(tx.amount);
+                if (tx.type.toUpperCase() === 'INCOME') balances[tx.payment_mode] += Math.abs(tx.amount);
+                else if (tx.type.toUpperCase() === 'EXPENSE') balances[tx.payment_mode] -= Math.abs(tx.amount);
             }
         });
         
+        // UI mein balance update karo
         const currencyFormat = { style: 'currency', currency: 'INR' };
         let totalBalance = 0;
         const individualBalancesContainer = document.getElementById('individual-balances');
@@ -415,32 +471,35 @@ async function fetchData() {
         });
         document.getElementById('total-balance').innerText = new Intl.NumberFormat('en-IN', currencyFormat).format(totalBalance);
 
-        // NAYE FILTERS KI VALUES HASIL KARO
+        // Step 2: Ab Transaction Page ke filters ke liye data filter karo
         const startDate = document.getElementById('start-date').value;
         const endDate = document.getElementById('end-date').value;
         const searchTerm = document.getElementById('search-input').value.trim();
         const selectedCategory = document.getElementById('filter-category').value;
         const selectedAccount = document.getElementById('filter-account').value;
+
+        let filteredTx = allTimeTransactions.filter(tx => {
+            const txDate = new Date(tx.transaction_date);
+            const notes = tx.notes || '';
+            
+            const dateMatch = (!startDate || txDate >= new Date(startDate)) && (!endDate || txDate <= new Date(endDate));
+            const categoryMatch = !selectedCategory || tx.category === selectedCategory;
+            const accountMatch = !selectedAccount || tx.payment_mode === selectedAccount;
+            const searchMatch = !searchTerm || notes.toLowerCase().includes(searchTerm.toLowerCase());
+            
+            return dateMatch && categoryMatch && accountMatch && searchMatch;
+        });
         
-        // QUERY BUILDER
-        let query = supabaseClient.from('transactions').select('*').order('transaction_date', { ascending: false });
+        // Date ke hisab se sort karo
+        filteredTx.sort((a, b) => new Date(b.transaction_date) - new Date(a.transaction_date));
 
-        // FILTERS KO QUERY MEIN ADD KARO
-        if (startDate) query = query.gte('transaction_date', startDate);
-        if (endDate) query = query.lte('transaction_date', endDate);
-        if (selectedCategory) query = query.eq('category', selectedCategory);
-        if (selectedAccount) query = query.eq('payment_mode', selectedAccount);
-        if (searchTerm) query = query.ilike('notes', `%${searchTerm}%`); // notes column mein search karega
-
-        // QUERY EXECUTE KARO
-        const { data: filteredTx, error: filteredTxError } = await query;
-        if (filteredTxError) throw filteredTxError;
-
-        allTransactions = filteredTx || [];
+        allTransactions = filteredTx; // Yeh sirf transaction list ke liye hai
         document.getElementById('data-container').innerHTML = '';
         currentlyDisplayedCount = 0;
         displayTransactions();
-        renderExpenseChart(allTransactions);
+        
+        // Chart ko default filter ke saath update karo
+        updateChartData();
 
     } catch (error) {
         console.error('Error fetching data:', error);
@@ -607,6 +666,7 @@ function initializeApp() {
     populateCategoriesDropdown();
     populateCategoryFilter();
     populateAccountFilter();
+    handleChartFilterClick('thisMonth');
 }
 
 const logoutButton = document.getElementById('logout-btn');
