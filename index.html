@@ -5,12 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Advanced Cashbook</title>
     <link rel="stylesheet" href="style.css">
-    <!-- SUPABASE LIBRARY LINK -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
-<!-- App ka main container, jo login ke baad dikhega -->
 <div class="container">
     <!-- PAGE 1: HOME -->
     <div id="home-page" class="page-content">
@@ -73,18 +71,6 @@
     </div>
 </div>
 
-<!-- NAYA LOGIN/SIGNUP OVERLAY FORM -->
-<div id="auth-overlay" class="auth-overlay hidden">
-    <div class="auth-container">
-        <h2 id="auth-title">Login</h2>
-        <div id="auth-error" class="auth-error"></div>
-        <input type="email" id="auth-email" placeholder="Email">
-        <input type="password" id="auth-password" placeholder="Password">
-        <button id="auth-action-btn" onclick="handleAuthAction()">Login</button>
-        <p id="auth-toggle-text">Don't have an account? <a href="#" onclick="toggleAuthMode()">Sign Up</a></p>
-    </div>
-</div>
-
 <!-- Custom Message Box -->
 <div id="messageBox" class="message-box">
     <p id="messageText"></p>
@@ -100,6 +86,7 @@
     <button class="tab-link" id="logout-btn" onclick="logoutUser()">Logout</button>
 </div>
 
+<!-- Yeh ab main app ki script file hai -->
 <script src="script.js"></script>
 </body>
 </html>
