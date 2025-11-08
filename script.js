@@ -76,6 +76,17 @@ function closeSidebar() {
     document.getElementById('sidebar-overlay').classList.remove('active');
 }
 
+// localStorage se hidden accounts ki list laata hai
+function getHiddenAccounts() {
+    const hidden = localStorage.getItem('hiddenAccounts');
+    return hidden ? JSON.parse(hidden) : [];
+}
+
+// Hidden accounts ki list ko localStorage mein save karta hai
+function saveHiddenAccounts(accounts) {
+    localStorage.setItem('hiddenAccounts', JSON.stringify(accounts));
+}
+
 function handleTabClick(pageName, element) {
     resetAllCategoryStates();
     resetAllAccountStates();
@@ -415,6 +426,27 @@ async function saveTransactionFromModal() {
     }
 }
 
+// YEH NAYA FUNCTION ADD KAREIN
+async function toggleBalanceVisibility(accountName) {
+    let hiddenAccounts = getHiddenAccounts();
+    
+    // Check karo ki account pehle se hidden hai ya nahi
+    const isHidden = hiddenAccounts.includes(accountName);
+
+    if (isHidden) {
+        // Agar hidden hai, to list se hata do
+        hiddenAccounts = hiddenAccounts.filter(name => name !== accountName);
+    } else {
+        // Agar hidden nahi hai, to list mein add kar do
+        hiddenAccounts.push(accountName);
+    }
+
+    saveHiddenAccounts(hiddenAccounts); // Nayi list ko save karo
+
+    // UI ko refresh karne ke liye fetchData ko dobara call karo
+    await fetchData();
+}
+
 function showModal() {
     document.getElementById('modal-date').valueAsDate = new Date();
     document.getElementById('modal-amount').value = '';
@@ -678,17 +710,47 @@ async function fetchData() {
             }
         });
         
+        // --- BALANCE CARD LOGIC (YAHAN BADE BADLAV HAIN) ---
         const currencyFormat = { style: 'currency', currency: 'INR' };
         let totalBalance = 0;
         const individualBalancesContainer = document.getElementById('individual-balances');
         individualBalancesContainer.innerHTML = '';
+
+        // Step 1: Hidden accounts ki list get karo
+        const hiddenAccounts = getHiddenAccounts();
+
         Object.keys(balances).sort().forEach(accName => {
             const balance = balances[accName];
-            totalBalance += balance;
-            individualBalancesContainer.innerHTML += `<div class="balance-item"><span>${accName}:</span><span>${new Intl.NumberFormat('en-IN', currencyFormat).format(balance)}</span></div>`;
+            const isHidden = hiddenAccounts.includes(accName);
+            
+            // Step 2: Total balance calculate karte waqt hidden accounts ko ignore karo
+            if (!isHidden) {
+                totalBalance += balance;
+            }
+
+            // Step 3: Icon aur balance text decide karo
+            const balanceText = isHidden ? '∗∗∗∗' : new Intl.NumberFormat('en-IN', currencyFormat).format(balance);
+            const eyeIconSVG = isHidden 
+                ? `<svg viewBox="0 0 576 512"><path d="M288 32c-80.8 0-145.5 36.8-192.6 80.6C48.6 156 17.3 204.8 2.5 256a32.5 32.5 0 000 7.2c14.8 51.2 46.1 99.4 93.1 142.4C142.5 443.2 207.2 480 288 480c80.8 0 145.5-36.8 192.6-80.6c47-43 78.3-91.2 93.1-142.4a32.5 32.5 0 000-7.2c-14.8-51.2-46.1-99.4-93.1-142.4C433.5 68.8 368.8 32 288 32zM432 256c0 79.5-64.5 144-144 144s-144-64.5-144-144s64.5-144 144-144s144 64.5 144 144zM288 192c0 35.3-28.7 64-64 64c-11.2 0-21.6-2.9-30.7-8.1l-98.3-98.3c-23.1 27.9-39.7 61.9-46.9 99.4L288 192zm22.4 91.9c-7.7 5.1-16.6 8.1-26.4 8.1c-35.3 0-64-28.7-64-64c0-9.8 2.9-18.7 8.1-26.4l-98.3-98.3c-37.5 7.2-71.5 23.8-99.4 46.9l286.1 286.1c23.1-27.9 39.7-61.9 46.9-99.4L310.4 283.9z"/></svg>` // Slashed Eye
+                : `<svg viewBox="0 0 576 512"><path d="M288 32c-80.8 0-145.5 36.8-192.6 80.6C48.6 156 17.3 204.8 2.5 256a32.5 32.5 0 000 7.2c14.8 51.2 46.1 99.4 93.1 142.4C142.5 443.2 207.2 480 288 480c80.8 0 145.5-36.8 192.6-80.6c47-43 78.3-91.2 93.1-142.4a32.5 32.5 0 000-7.2c-14.8-51.2-46.1-99.4-93.1-142.4C433.5 68.8 368.8 32 288 32zM432 256c0 79.5-64.5 144-144 144s-144-64.5-144-144s64.5-144 144-144s144 64.5 144 144zM288 224a32 32 0 110 64a32 32 0 110-64z"/></svg>`; // Open Eye
+            
+            // Step 4: Naya HTML structure render karo
+            individualBalancesContainer.innerHTML += `
+                <div class="balance-item">
+                    <span>${accName}:</span>
+                    <div class="balance-value-container">
+                        <span>${balanceText}</span>
+                        <button class="visibility-toggle-btn" onclick="toggleBalanceVisibility('${accName}')">
+                            ${eyeIconSVG}
+                        </button>
+                    </div>
+                </div>
+            `;
         });
+        
         document.getElementById('total-balance').innerText = new Intl.NumberFormat('en-IN', currencyFormat).format(totalBalance);
 
+        // Baaki ka function same rahega
         const startDate = document.getElementById('start-date').value;
         const endDate = document.getElementById('end-date').value;
         const searchTerm = document.getElementById('search-input').value.trim();
@@ -846,6 +908,7 @@ function initializeApp() {
     document.getElementById('menu-btn').onclick = openSidebar;
     document.getElementById('sidebar-overlay').onclick = closeSidebar;
     document.getElementById('completed-tasks-header').onclick = toggleCompletedTasks;
+    window.toggleBalanceVisibility = toggleBalanceVisibility;
 
     // --- MODAL EVENT LISTENERS ---
     document.getElementById('add-transaction-fab').onclick = showModal;
