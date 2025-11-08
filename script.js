@@ -358,3 +358,12 @@ function initializeApp() {
     populatePaymentModesDropdown();
     populateCategoriesDropdown();
 }
+
+// ---- NAYA CODE: LOGOUT BUTTON KE LIYE EVENT LISTENER ----
+// Yeh code tab chalta hai jab poora HTML document load ho jaata hai.
+document.addEventListener('DOMContentLoaded', () => {
+    const logoutButton = document.getElementById('logout-btn');
+    if (logoutButton) {
+        logoutButton.addEventListener('click', logoutUser);
+    }
+});
