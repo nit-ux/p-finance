@@ -316,6 +316,7 @@ async function populatePaymentModesDropdown() {
 
 // ====== CORE APP LOGIC ======
 async function fetchData() {
+    showSpinner(); // Data fetching shuru hone se pehle spinner dikhayein
     try {
         const accountsData = await getAccounts();
         const { data: allTxData, error: allTxError } = await supabaseClient.from('transactions').select('amount, payment_mode, type');
@@ -361,6 +362,8 @@ async function fetchData() {
     } catch (error) {
         console.error('Error fetching data:', error);
         showMessage('Error fetching data from Supabase.');
+    } finally {
+        hideSpinner(); // Kaam khatam hone par spinner hamesha chhupa dein
     }
 }
 
