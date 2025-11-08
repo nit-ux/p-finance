@@ -1,7 +1,6 @@
-// ====== SUPABASE SETUP ======
-// IMPORTANT: YAHAN APNI SUPABASE URL AUR ANON KEY DAALEIN
-const SUPABASE_URL = 'https://wfwjcbbylwmozqcddigc.supabase.co/'; // Yahan apna Supabase Project URL daalein
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indmd2pjYmJ5bHdtb3pxY2RkaWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIxMzk1MTQsImV4cCI6MjA3NzcxNTUxNH0.5hNH22mvpECQzfEgQsQRIbuWNm4XenUszgd21oOEif8'; // Yahan apni Supabase Anon Key daalein
+// ====== SUPABASE SETUP for MAIN APP ======
+const SUPABASE_URL = 'YOUR_SUPABASE_URL';
+const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
 
 const { createClient } = supabase;
 const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -28,6 +27,7 @@ supabaseClient.auth.onAuthStateChange((event, session) => {
         window.location.href = 'login.html';
     }
 })();
+
 
 async function logoutUser() {
     await supabaseClient.auth.signOut();
@@ -359,11 +359,10 @@ function initializeApp() {
     populateCategoriesDropdown();
 }
 
-// ---- NAYA CODE: LOGOUT BUTTON KE LIYE EVENT LISTENER ----
-// Yeh code tab chalta hai jab poora HTML document load ho jaata hai.
-document.addEventListener('DOMContentLoaded', () => {
-    const logoutButton = document.getElementById('logout-btn');
-    if (logoutButton) {
-        logoutButton.addEventListener('click', logoutUser);
-    }
-});
+// ---- CORRECTED LOGOUT BUTTON EVENT LISTENER ----
+// Yeh code script ke aakhir mein hai aur turant chalega.
+// Kyunki script tag body ke end mein hai, isliye logout button hamesha available hoga.
+const logoutButton = document.getElementById('logout-btn');
+if (logoutButton) {
+    logoutButton.addEventListener('click', logoutUser);
+}
