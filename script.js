@@ -96,6 +96,7 @@ function handleTabClick(pageName, element) {
     else if (pageName === 'Category') { document.getElementById('category-page').classList.remove('hidden'); renderCategoriesList(); } 
     else if (pageName === 'Accounts') { document.getElementById('accounts-page').classList.remove('hidden'); renderAccountsList(); } 
     else if (pageName === 'Transaction') { document.getElementById('transaction-page').classList.remove('hidden'); fetchData(); }
+    else if (pageName === 'Tasks') { document.getElementById('tasks-page').classList.remove('hidden'); renderTasks(); }
 
     closeSidebar(); // Hamesha sidebar ko band kar do
 }
@@ -406,6 +407,139 @@ async function renderExpenseChart(transactions) {
             }
         }
     });
+}
+
+// ... renderExpenseChart() function ke baad ...
+
+// YEH SAARE NAYE FUNCTIONS ADD KAREIN
+
+// --- TASK MANAGEMENT LOGIC ---
+
+// Database se saare tasks fetch karke screen par dikhayega
+async function renderTasks() {
+    showSpinner();
+    try {
+        const userId = await getCurrentUserId();
+        if (!userId) return;
+
+        const { data: tasks, error } = await supabaseClient
+            .from('tasks')
+            .select('*')
+            .eq('user_id', userId)
+            .order('created_at', { ascending: false }); // Naye tasks upar
+
+        if (error) throw error;
+
+        const container = document.getElementById('tasks-list-container');
+        container.innerHTML = ''; // Purani list saaf karo
+
+        if (tasks.length === 0) {
+            container.innerHTML = '<p style="text-align:center;">No tasks found. Add one above!</p>';
+            return;
+        }
+
+        tasks.forEach(task => {
+            const taskEl = document.createElement('div');
+            taskEl.className = `task-item ${task.is_completed ? 'completed' : ''}`;
+            
+            const dueDate = task.due_date ? new Date(task.due_date).toLocaleDateString() : 'No due date';
+
+            taskEl.innerHTML = `
+                <div class="checkbox-container">
+                    <input type="checkbox" ${task.is_completed ? 'checked' : ''} onchange="toggleTaskStatus(${task.id}, ${task.is_completed})">
+                </div>
+                <div class="task-details">
+                    <h4>${task.title}</h4>
+                    <p>${task.description || ''}</p>
+                    <div class="due-date">${dueDate}</div>
+                </div>
+                <div class="task-actions">
+                    <button class="delete-btn" onclick="deleteTask(${task.id})" title="Delete Task">
+                        <svg viewBox="0 0 448 512"><path d="M135.2 17.7L128 32H32C14.3 32 0 46.3 0 64S14.3 96 32 96H416c17.7 0 32-14.3 32-32s-14.3-32-32-32H320l-7.2-14.3C307.4 6.8 296.3 0 284.2 0H163.8c-12.1 0-23.2 6.8-28.6 17.7zM416 128H32L53.2 467c1.6 25.3 22.6 45 47.9 45H346.9c25.3 0 46.3-19.7 47.9-45L416 128z"/></svg>
+                    </button>
+                </div>
+            `;
+            container.appendChild(taskEl);
+        });
+    } catch (error) {
+        showMessage(`Error fetching tasks: ${error.message}`);
+    } finally {
+        hideSpinner();
+    }
+}
+
+// Naya task add karega
+async function addTask() {
+    const title = document.getElementById('new-task-title').value.trim();
+    const description = document.getElementById('new-task-desc').value.trim();
+    const dueDate = document.getElementById('new-task-due-date').value;
+    
+    if (!title) {
+        showMessage('Task title is required.');
+        return;
+    }
+
+    const userId = await getCurrentUserId();
+    if (!userId) return;
+
+    showSpinner();
+    try {
+        const { error } = await supabaseClient
+            .from('tasks')
+            .insert({
+                title: title,
+                description: description,
+                due_date: dueDate || null, // Agar date khaali hai to null bhejo
+                user_id: userId,
+                is_completed: false
+            });
+
+        if (error) throw error;
+
+        // Form clear karo
+        document.getElementById('new-task-title').value = '';
+        document.getElementById('new-task-desc').value = '';
+        document.getElementById('new-task-due-date').value = '';
+
+        await renderTasks(); // List ko refresh karo
+    } catch (error) {
+        showMessage(`Error adding task: ${error.message}`);
+    } finally {
+        hideSpinner();
+    }
+}
+
+// Task ka status (complete/incomplete) badlega
+async function toggleTaskStatus(taskId, currentStatus) {
+    try {
+        const { error } = await supabaseClient
+            .from('tasks')
+            .update({ is_completed: !currentStatus }) // Status ko ulta kar do
+            .eq('id', taskId);
+
+        if (error) throw error;
+        await renderTasks(); // List refresh karo
+    } catch (error) {
+        showMessage(`Error updating task: ${error.message}`);
+    }
+}
+
+// Task ko delete karega
+async function deleteTask(taskId) {
+    const confirmed = await showConfirmation('Are you sure you want to delete this task?');
+    if (confirmed) {
+        try {
+            const { error } = await supabaseClient
+                .from('tasks')
+                .delete()
+                .eq('id', taskId);
+            
+            if (error) throw error;
+            await renderTasks(); // List refresh karo
+        } catch (error) {
+            showMessage(`Error deleting task: ${error.message}`);
+        }
+    }
 }
 
 async function fetchData() {
