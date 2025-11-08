@@ -323,7 +323,6 @@ async function renderAccountsList() {
             </div>
         `;
 
-        // Event Listeners (Category jaise)
         item.addEventListener('mousedown', () => handleAccountPressStart(item));
         item.addEventListener('mouseup', () => handleAccountPressEnd());
         item.addEventListener('mouseleave', () => cancelAccountPress());
@@ -334,6 +333,7 @@ async function renderAccountsList() {
         listContainer.appendChild(item);
     });
 }
+
 async function populateCategoryFilter() {
     const categories = await getCategories();
     const select = document.getElementById('filter-category');
@@ -802,23 +802,32 @@ function handleAccountPressEnd() {
 function handleAccountDoubleClick(item) {
     if (accountLongPressTriggered) return;
 
+    // YEH सुनिश्चित KAREIN KI YEH FUNCTION SAHI HAI
     if (item.querySelector('.save-btn').classList.contains('hidden')) {
+        // Step 1: SABSE PEHLE SABKO RESET KARO
         resetAllAccountStates();
         resetAllCategoryStates();
+
+        // Step 2: AB SIRF CLICK HUE ITEM KO EDIT MODE MEIN LAO
         item.querySelector('.account-name').classList.add('hidden');
         item.querySelector('.account-balance').classList.add('hidden');
         item.querySelector('.edit-account-view').classList.remove('hidden');
         item.querySelector('.save-btn').classList.remove('hidden');
-        item.querySelector('.edit-account-view input').focus();
+        item.querySelector('.edit-account-view .edit-account-input').focus();
     }
 }
 
 function cancelAccountPress() { clearTimeout(accountPressTimer); }
 function resetAllAccountStates() {
     document.querySelectorAll('.account-item').forEach(item => {
+        // Display View ko ON karo
         item.querySelector('.account-name').classList.remove('hidden');
-        item.querySelector('.account-balance').classList.remove('hidden'); // Yeh line add/update hui hai
-        item.querySelector('.edit-account-view').classList.add('hidden'); // Yeh line add/update hui hai
+        item.querySelector('.account-balance').classList.remove('hidden');
+        
+        // Edit View ko OFF karo
+        item.querySelector('.edit-account-view').classList.add('hidden');
+        
+        // Buttons ko Reset karo
         item.querySelector('.save-btn').classList.add('hidden');
         item.querySelector('.remove-btn').classList.add('hidden');
     });
