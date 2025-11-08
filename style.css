@@ -956,3 +956,57 @@ h1, h2 {
 .category-content.active {
     display: block; /* Sirf active content dikhega */
 }
+/* NAYA CSS CODE (Aakhir mein paste karein) */
+
+/* --- Pomodoro Page Styles --- */
+.pomodoro-container {
+    max-width: 400px;
+    margin: 20px auto;
+    padding: 30px;
+    background: #fff;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    text-align: center;
+    border: 5px solid #007bff; /* Default border for work time */
+    transition: border-color 0.5s ease;
+}
+
+/* Jab break time ho to border color badal do */
+.pomodoro-container.break-time {
+    border-color: #28a745; /* Green for break */
+}
+
+.pomodoro-task-selector {
+    margin-bottom: 25px;
+}
+.pomodoro-task-selector label {
+    display: block;
+    margin-bottom: 10px;
+    font-size: 1.1em;
+}
+#pomodoro-task-select {
+    width: 100%;
+    padding: 10px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+}
+
+.timer-display {
+    font-size: 6em;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 20px;
+}
+
+.pomodoro-controls button {
+    font-size: 1.2em;
+    padding: 10px 25px;
+    border-radius: 8px;
+    border: none;
+    color: white;
+    cursor: pointer;
+    margin: 0 5px;
+}
+#pomodoro-start-btn { background-color: #28a745; } /* Green */
+#pomodoro-pause-btn { background-color: #ffc107; } /* Yellow */
+#pomodoro-reset-btn { background-color: #dc3545; } /* Red */
