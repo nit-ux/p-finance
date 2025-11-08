@@ -285,3 +285,52 @@ h1, h2 { color: #0056b3; text-align: center; }
 #logout-btn {
     color: #dc3545; /* Red color for logout */
 }
+
+/* Dono pop-up boxes ke liye common styles */
+.message-box {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: white;
+    padding: 25px; /* Thoda zyada padding */
+    border-radius: 12px; /* Thode rounded corners */
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    z-index: 1000;
+    display: none; /* Default mein hidden */
+    text-align: center;
+    width: 90%;
+    max-width: 350px; /* Max width set karein */
+    border-top: 5px solid #007bff; /* Ek accent color add karein */
+}
+
+/* Confirmation box ke buttons ke liye container */
+.confirm-buttons {
+    display: flex;
+    justify-content: flex-end; /* Buttons ko right side align karein */
+    gap: 15px; /* Buttons ke beech mein space */
+    margin-top: 20px;
+}
+
+/* Dono confirmation buttons ke liye common style */
+.confirm-buttons button {
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 0.9em;
+}
+
+/* "Yes, Delete" button ka style */
+#confirm-yes-btn {
+    background-color: #dc3545; /* Red (Danger) */
+    color: white;
+}
+
+/* "Cancel" button ka style */
+#confirm-no-btn {
+    background-color: #e9ecef; /* Light grey */
+    color: #333;
+    border: 1px solid #ccc;
+}
