@@ -23,6 +23,15 @@
                 <p id="total-balance">0</p>
                 <div id="individual-balances"></div>
             </div>
+        <div class="chart-filters">
+            <button id="btn-this-month" class="chart-filter-btn active" onclick="handleChartFilterClick('thisMonth')">This Month</button>
+            <button id="btn-all-time" class="chart-filter-btn" onclick="handleChartFilterClick('allTime')">All Time</button>
+            <div class="custom-date-range">
+                <input type="date" id="chart-start-date" onchange="handleChartFilterClick('custom')">
+                <span>to</span>
+                <input type="date" id="chart-end-date" onchange="handleChartFilterClick('custom')">
+            </div>
+        </div>
         </div>
             <div class="chart-container">
             <canvas id="expenseChart"></canvas>
