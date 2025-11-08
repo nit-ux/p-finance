@@ -542,6 +542,13 @@ async function deleteTask(taskId) {
     }
 }
 
+function toggleCompletedTasks() {
+    const header = document.getElementById('completed-tasks-header');
+    const list = document.getElementById('completed-tasks-list');
+    header.classList.toggle('open');
+    list.classList.toggle('open');
+}
+
 async function fetchData() {
     showSpinner();
     try {
