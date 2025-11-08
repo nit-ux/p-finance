@@ -881,8 +881,3 @@ h1, h2 {
     border: 1px solid #007bff;
     border-radius: 4px;
 }
-
-.item-actions .edit-btn {
-    background-color: #ffc107; /* Yellow */
-    color: #333;
-}
