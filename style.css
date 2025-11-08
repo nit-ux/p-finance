@@ -17,8 +17,6 @@ body {
 h1, h2 {
     color: #0056b3;
     text-align: center;
-    margin-top: 0; /* Upar ka extra margin hata do */
-    margin-bottom: 20px; /* Neeche thodi si jagah rakho */
 }
 
 .balance-container {
