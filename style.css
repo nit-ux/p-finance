@@ -14,7 +14,12 @@ body {
     box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     padding-bottom: 80px; 
 }
-h1, h2 { color: #0056b3; text-align: center; }
+h1, h2 {
+    color: #0056b3;
+    text-align: center;
+    margin-top: 0; /* Upar ka extra margin hata do */
+    margin-bottom: 20px; /* Neeche thodi si jagah rakho */
+}
 
 .balance-container {
     display: flex;
