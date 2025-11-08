@@ -358,7 +358,9 @@ function resetAllCategoryStates() {
 
 // Jab app load hota hai, to auth listener sab kuchh shuru kar dega.
 function initializeApp() {
+    console.log("Loading initial data...");
     fetchData(); 
     populatePaymentModesDropdown();
     populateCategoriesDropdown();
 }
+
