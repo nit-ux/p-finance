@@ -805,3 +805,55 @@ h1, h2 {
     height: 18px;
     fill: #dc3545; /* Red color */
 }
+/* NAYA CSS CODE (Aakhir mein paste karein) */
+
+/* --- Collapsible Completed Tasks Section --- */
+.completed-tasks-section {
+    margin-top: 30px;
+    border-top: 2px solid #007bff;
+}
+
+.completed-tasks-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    background-color: #f8f9fa;
+    cursor: pointer;
+    border-bottom: 1px solid #ddd;
+}
+.completed-tasks-header h4 {
+    margin: 0;
+    color: #333;
+}
+.completed-tasks-header .collapse-icon {
+    width: 16px;
+    fill: #555;
+    transition: transform 0.3s ease;
+}
+
+/* Jab section open ho to icon ko ghuma do */
+.completed-tasks-header.open .collapse-icon {
+    transform: rotate(180deg);
+}
+
+.completed-tasks-list {
+    /* Yeh animation ke liye zaroori hai */
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.4s ease-out;
+    background: #fdfdfd;
+}
+
+/* Jab list open ho to use height do */
+.completed-tasks-list.open {
+    max-height: 1000px; /* Ek badi value taaki saare tasks fit ho jayein */
+    transition: max-height 0.4s ease-in;
+}
+
+/* List ke andar ke task items ke liye thodi padding */
+.completed-tasks-list .task-item {
+    border-bottom: 1px solid #eee;
+    box-shadow: none;
+    border-radius: 0;
+}
