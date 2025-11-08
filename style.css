@@ -714,3 +714,91 @@ h1, h2 { color: #0056b3; text-align: center; }
 .sidebar-link:hover {
     background: #f0f0f0;
 }
+/* NAYA CSS CODE (Aakhir mein paste karein) */
+
+/* --- Tasks Page Styles --- */
+.add-task-form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 25px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #ddd;
+}
+.add-task-form input {
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+.add-task-form input[type="text"] {
+    flex: 1; /* Title aur desc ko zyada jagah do */
+    min-width: 150px;
+}
+.add-task-form button {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+#tasks-list-container {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.task-item {
+    background: #fff;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    display: flex;
+    align-items: flex-start;
+    gap: 15px;
+}
+
+.task-item .checkbox-container {
+    flex-shrink: 0; /* Checkbox ko shrink na hone dein */
+}
+
+.task-item .task-details {
+    flex-grow: 1; /* Bachi hui saari jagah le lo */
+}
+
+.task-item h4 {
+    margin: 0 0 5px 0;
+}
+.task-item p {
+    margin: 0 0 10px 0;
+    font-size: 0.9em;
+    color: #555;
+}
+.task-item .due-date {
+    font-size: 0.8em;
+    color: #888;
+}
+
+/* Jab task complete ho jaye */
+.task-item.completed h4,
+.task-item.completed p {
+    text-decoration: line-through;
+    color: #aaa;
+}
+
+.task-actions {
+    display: flex;
+    gap: 10px;
+}
+.task-actions button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+}
+.task-actions .delete-btn svg {
+    width: 18px;
+    height: 18px;
+    fill: #dc3545; /* Red color */
+}
