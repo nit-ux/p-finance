@@ -68,6 +68,14 @@ function showConfirmation(message) {
     });
 }
 
+function showSpinner() {
+    document.getElementById('loading-overlay').style.display = 'flex';
+}
+
+function hideSpinner() {
+    document.getElementById('loading-overlay').style.display = 'none';
+}
+
 function handleTabClick(tabName, element) {
     resetAllCategoryStates();
     resetAllAccountStates();
