@@ -735,6 +735,8 @@ function initializeRealtimeSubscriptions() {
         })
         .subscribe();
 }
+// PURANE initializeApp FUNCTION KO IS NAYE, COMPLETE FUNCTION SE REPLACE KAREIN
+
 function initializeApp() {
     console.log("Loading initial data...");
     fetchData(); 
@@ -742,12 +744,18 @@ function initializeApp() {
     populateAccountFilter();
     handleChartFilterClick('thisMonth');
     window.toggleBalanceVisibility = toggleBalanceVisibility;
+
+    // --- SIDEBAR EVENT LISTENERS ---
     document.getElementById('menu-btn').onclick = openSidebar;
     document.getElementById('sidebar-overlay').onclick = closeSidebar;
+
+    // --- MODAL EVENT LISTENERS ---
     document.getElementById('add-transaction-fab').onclick = showModal;
     document.getElementById('modal-close-btn').onclick = hideModal;
     document.getElementById('modal-save-btn').onclick = saveTransactionFromModal;
-    document.getElementById('transaction-modal-overlay').onclick = (event) => { if (event.target.id === 'transaction-modal-overlay') hideModal(); };
+    document.getElementById('transaction-modal-overlay').onclick = (event) => {
+        if (event.target.id === 'transaction-modal-overlay') hideModal();
+    };
     document.querySelectorAll('.type-btn').forEach(btn => {
         btn.onclick = () => {
             document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
@@ -756,7 +764,11 @@ function initializeApp() {
             populateCategoriesInModal(selectedModalType);
         };
     });
+
+    // --- POMODORO EVENT LISTENERS ---
     document.getElementById('pomodoro-start-btn').onclick = startPomodoro;
+    document.getElementById('pomodoro-pause-btn').onclick = pausePomodoro;
+    document.getElementById('pomodoro-reset-btn').onclick = resetPomodoro;
     document.getElementById('pomodoro-task-select').onchange = async (e) => {
         const taskId = e.target.value;
         if (!taskId) {
@@ -769,12 +781,16 @@ function initializeApp() {
             handlePomodoroUpdate(task);
         }
     };
-    document.getElementById('pomodoro-pause-btn').onclick = pausePomodoro;
-    document.getElementById('pomodoro-reset-btn').onclick = resetPomodoro;
+
+    // --- TASKS PAGE EVENT LISTENER ---
     document.getElementById('completed-tasks-header').onclick = toggleCompletedTasks;
+    
+    // --- LOGOUT BUTTON LISTENER ---
     const logoutButton = document.getElementById('logout-btn');
     if (logoutButton) {
         logoutButton.addEventListener('click', logoutUser);
     }
+    
+    // --- REALTIME SUBSCRIPTIONS ---
     initializeRealtimeSubscriptions();
 }
