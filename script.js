@@ -1163,4 +1163,3 @@ document.querySelectorAll('.type-btn').forEach(btn => {
     if (logoutButton) {
         logoutButton.addEventListener('click', logoutUser);
     }
-}
