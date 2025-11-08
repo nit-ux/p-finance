@@ -861,3 +861,28 @@ h1, h2 {
     box-shadow: none;
     border-radius: 0;
 }
+/* NAYA CSS CODE (Aakhir mein paste karein) */
+
+.account-item .account-balance {
+    font-size: 0.9em;
+    color: #555;
+    display: block; /* Naam ke neeche dikhayein */
+    margin-top: 5px;
+}
+
+.edit-account-view {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 5px;
+}
+.edit-account-view input {
+    padding: 8px;
+    border: 1px solid #007bff;
+    border-radius: 4px;
+}
+
+.item-actions .edit-btn {
+    background-color: #ffc107; /* Yellow */
+    color: #333;
+}
