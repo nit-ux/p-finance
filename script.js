@@ -11,69 +11,27 @@ let currentlyDisplayedCount = 0;
 const transactionsPerLoad = 10;
 let pressTimer = null;
 let longPressTriggered = false;
-let isLoginMode = true; // Auth UI ke liye
 
-// ====== AUTHENTICATION LOGIC ======
+// ====== AUTHENTICATION & SECURITY CHECK ======
 
-// Yeh function page load hote hi check karta hai ki user logged-in hai ya nahi
+// Yeh function check karta hai ki user logged-in hai ya nahi.
+// Agar nahi hai, to use login page par bhej dega.
 supabase.auth.onAuthStateChange((event, session) => {
-    const authOverlay = document.getElementById('auth-overlay');
-    const mainContainer = document.querySelector('.container');
-    const tabContainer = document.querySelector('.tab-bar');
-
-    if (session && session.user) {
-        // User logged-in hai: App dikhao, login form chhupao
-        authOverlay.classList.add('hidden');
-        mainContainer.classList.remove('hidden');
-        tabContainer.classList.remove('hidden');
-        initializeApp(); // App ka saara data load karo
+    if (!session || !session.user) {
+        // User logged-in nahi hai, Fauran login page par bhejo!
+        window.location.href = 'login.html';
     } else {
-        // User logged-in nahi hai: Login form dikhao, app chhupao
-        authOverlay.classList.remove('hidden');
-        mainContainer.classList.add('hidden');
-        tabContainer.classList.add('hidden');
+        // User logged-in hai, app ko shuru karo.
+        console.log('User is authenticated. Initializing app...');
+        initializeApp();
     }
 });
 
-// Login aur Signup form ke beech switch karne ke liye
-function toggleAuthMode() {
-    isLoginMode = !isLoginMode;
-    document.getElementById('auth-title').innerText = isLoginMode ? 'Login' : 'Sign Up';
-    document.getElementById('auth-action-btn').innerText = isLoginMode ? 'Login' : 'Sign Up';
-    document.getElementById('auth-toggle-text').innerHTML = isLoginMode 
-        ? 'Don\'t have an account? <a href="#" onclick="toggleAuthMode()">Sign Up</a>'
-        : 'Already have an account? <a href="#" onclick="toggleAuthMode()">Login</a>';
-    document.getElementById('auth-error').innerText = '';
-}
-
-// Login ya Signup button par click handle karne ke liye
-async function handleAuthAction() {
-    const email = document.getElementById('auth-email').value;
-    const password = document.getElementById('auth-password').value;
-    const authError = document.getElementById('auth-error');
-    authError.innerText = '';
-
-    try {
-        const { error } = isLoginMode
-            ? await supabase.auth.signInWithPassword({ email, password })
-            : await supabase.auth.signUp({ email, password });
-
-        if (error) throw error;
-
-        if (!isLoginMode) {
-            showMessage("Signup successful! Please check your email to verify your account.");
-        }
-    } catch (error) {
-        authError.innerText = error.message;
-    }
-}
-
-// User ko logout karne ke liye
 async function logoutUser() {
     await supabase.auth.signOut();
+    // signOut hone par onAuthStateChange apne aap user ko login page par bhej dega.
 }
 
-// Current logged-in user ki ID lene ke liye
 async function getCurrentUserId() {
     const { data: { session } } = await supabase.auth.getSession();
     return session ? session.user.id : null;
