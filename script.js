@@ -181,15 +181,45 @@ async function getAccounts() {
 }
 
 async function addAccount() {
-    const input = document.getElementById('new-account-name');
-    const newName = input.value.trim();
-    if (!newName) { showMessage('Account name cannot be empty.'); return; }
+    const nameInput = document.getElementById('new-account-name');
+    const balanceInput = document.getElementById('new-account-balance'); // Naya input field
+
+    const newName = nameInput.value.trim();
+    // Balance ko number mein convert karo, agar khaali hai to 0 maano
+    const initialBalance = parseFloat(balanceInput.value) || 0;
+
+    if (!newName) {
+        showMessage('Account name cannot be empty.');
+        return;
+    }
+
     const userId = await getCurrentUserId();
     if (!userId) return;
-    const { error } = await supabaseClient.from('accounts').insert([{ name: newName, user_id: userId, initial_balance: 0, type: 'general' }]);
-    if (error) { showMessage(`Error: ${error.message}`); return; }
-    renderAccountsList();
-    input.value = '';
+
+    showSpinner();
+    try {
+        const { error } = await supabaseClient.from('accounts').insert([{ 
+            name: newName, 
+            user_id: userId, 
+            initial_balance: initialBalance, // Yahan naya balance use karo
+            type: 'general' 
+        }]);
+
+        if (error) throw error;
+
+        // Form fields ko clear karo
+        nameInput.value = '';
+        balanceInput.value = '';
+
+        // UI ko turant update karo
+        await renderAccountsList();
+        await populateAccountFilter(); // Filter dropdown ko bhi update karo
+        
+    } catch (error) {
+        showMessage(`Error: ${error.message}`);
+    } finally {
+        hideSpinner();
+    }
 }
 
 async function removeAccount(name) {
