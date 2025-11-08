@@ -13,6 +13,7 @@ let pressTimer = null; // For categories
 let longPressTriggered = false;
 let accountPressTimer = null; // For accounts
 let accountLongPressTriggered = false;
+let expenseChartInstance = null;
 
 // ====== AUTHENTICATION & SECURITY CHECK ======
 supabaseClient.auth.onAuthStateChange((event, session) => {
@@ -331,6 +332,61 @@ async function populateAccountFilter() {
 }
 
 // ====== CORE APP LOGIC ======
+async function renderExpenseChart(transactions) {
+    const ctx = document.getElementById('expenseChart').getContext('2d');
+
+    // Step 1: Sirf 'EXPENSE' type ke transactions filter karo
+    const expenses = transactions.filter(tx => tx.type.toUpperCase() === 'EXPENSE');
+
+    // Step 2: Categories ke hisab se kharchon ko group karke unka total karo
+    const expenseByCategory = {};
+    expenses.forEach(tx => {
+        if (expenseByCategory[tx.category]) {
+            expenseByCategory[tx.category] += tx.amount;
+        } else {
+            expenseByCategory[tx.category] = tx.amount;
+        }
+    });
+
+    // Step 3: Chart.js ke liye labels aur data arrays banao
+    const labels = Object.keys(expenseByCategory);
+    const data = Object.values(expenseByCategory);
+
+    // Step 4: Purana chart agar ho to use destroy kar do
+    if (expenseChartInstance) {
+        expenseChartInstance.destroy();
+    }
+    
+    // Step 5: Naya chart banao
+    expenseChartInstance = new Chart(ctx, {
+        type: 'doughnut', // Chart ka type
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Expenses',
+                data: data,
+                backgroundColor: [ // Chart ke liye sundar colors
+                    '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', 
+                    '#9966FF', '#FF9F40', '#C9CBCF', '#7C4DFF'
+                ],
+                hoverOffset: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'top', // Labels upar dikhayein
+                },
+                title: {
+                    display: true,
+                    text: 'Expenses by Category' // Chart ka title
+                }
+            }
+        }
+    });
+}
+
 async function fetchData() {
     showSpinner();
     try {
@@ -384,6 +440,7 @@ async function fetchData() {
         document.getElementById('data-container').innerHTML = '';
         currentlyDisplayedCount = 0;
         displayTransactions();
+        renderExpenseChart(allTransactions);
 
     } catch (error) {
         console.error('Error fetching data:', error);
