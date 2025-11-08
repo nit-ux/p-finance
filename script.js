@@ -17,6 +17,10 @@ let accountPressTimer = null;
 let accountLongPressTriggered = false;
 let expenseChartInstance = null;
 let allTimeTransactions = [];
+let pomodoroInterval = null;
+let pomodoroTimeLeft = 25 * 60; // 25 minutes in seconds
+let pomodoroState = 'stopped'; // 'stopped', 'running', 'paused'
+let pomodoroMode = 'work'; // 'work', 'break'
 
 // ====== AUTHENTICATION & SECURITY CHECK ======
 supabaseClient.auth.onAuthStateChange((event, session) => {
@@ -108,6 +112,7 @@ function handleTabClick(pageName, element) {
     else if (pageName === 'Accounts') { document.getElementById('accounts-page').classList.remove('hidden'); renderAccountsList(); } 
     else if (pageName === 'Transaction') { document.getElementById('transaction-page').classList.remove('hidden'); fetchData(); }
     else if (pageName === 'Tasks') { document.getElementById('tasks-page').classList.remove('hidden'); renderTasks(); }
+    else if (pageName === 'Pomodoro') { document.getElementById('pomodoro-page').classList.remove('hidden'); initializePomodoroPage(); }
 
     closeSidebar(); // Hamesha sidebar ko band kar do
 }
@@ -746,6 +751,128 @@ async function deleteTask(taskId) {
     }
 }
 
+function initializePomodoroPage() {
+    populatePomodoroTaskSelect();
+    resetPomodoro(); // Timer ko default state mein set karo
+}
+
+// Dropdown ko incomplete tasks se bharega
+async function populatePomodoroTaskSelect() {
+    const select = document.getElementById('pomodoro-task-select');
+    select.innerHTML = '<option value="">-- Choose a task --</option>';
+    
+    const { data: tasks, error } = await supabaseClient
+        .from('tasks')
+        .select('id, title')
+        .eq('is_completed', false); // Sirf incomplete tasks
+
+    if (error) { console.error(error); return; }
+
+    tasks.forEach(task => {
+        select.innerHTML += `<option value="${task.id}">${task.title}</option>`;
+    });
+}
+
+// Timer ko start ya resume karega
+function startPomodoro() {
+    const selectedTaskId = document.getElementById('pomodoro-task-select').value;
+    if (!selectedTaskId) {
+        showMessage("Please select a task before starting the timer.");
+        return;
+    }
+
+    if (pomodoroState === 'running') return; // Agar pehle se chal raha hai to kuch mat karo
+
+    pomodoroState = 'running';
+    document.getElementById('pomodoro-start-btn').classList.add('hidden');
+    document.getElementById('pomodoro-pause-btn').classList.remove('hidden');
+
+    pomodoroInterval = setInterval(updatePomodoroTimer, 1000);
+}
+
+// Timer ko pause karega
+function pausePomodoro() {
+    if (pomodoroState !== 'running') return;
+    pomodoroState = 'paused';
+    clearInterval(pomodoroInterval);
+
+    document.getElementById('pomodoro-start-btn').innerText = 'Resume';
+    document.getElementById('pomodoro-start-btn').classList.remove('hidden');
+    document.getElementById('pomodoro-pause-btn').classList.add('hidden');
+}
+
+// Timer ko reset karega
+function resetPomodoro() {
+    clearInterval(pomodoroInterval);
+    pomodoroState = 'stopped';
+    pomodoroMode = 'work';
+    pomodoroTimeLeft = 25 * 60; // 25 minutes
+    
+    updateTimerDisplay();
+    document.getElementById('pomodoro-container').classList.remove('break-time');
+    document.getElementById('pomodoro-start-btn').innerText = 'Start';
+    document.getElementById('pomodoro-start-btn').classList.remove('hidden');
+    document.getElementById('pomodoro-pause-btn').classList.add('hidden');
+}
+
+// Har second timer ko update karega
+function updatePomodoroTimer() {
+    pomodoroTimeLeft--;
+    updateTimerDisplay();
+
+    if (pomodoroTimeLeft <= 0) {
+        clearInterval(pomodoroInterval);
+        document.getElementById('alarm-sound').play();
+        
+        if (pomodoroMode === 'work') {
+            pomodoroMode = 'break';
+            pomodoroTimeLeft = 5 * 60; // 5 minute ka break
+            document.getElementById('pomodoro-container').classList.add('break-time');
+            // Hum yahan `time_logs` table mein ek entry add kar sakte hain
+            logPomodoroSession();
+        } else {
+            pomodoroMode = 'work';
+            pomodoroTimeLeft = 25 * 60; // Naya work session
+            document.getElementById('pomodoro-container').classList.remove('break-time');
+        }
+        
+        pomodoroState = 'stopped';
+        document.getElementById('pomodoro-start-btn').innerText = 'Start';
+        document.getElementById('pomodoro-start-btn').classList.remove('hidden');
+        document.getElementById('pomodoro-pause-btn').classList.add('hidden');
+        
+        updateTimerDisplay();
+    }
+}
+
+// Screen par time (MM:SS) format mein dikhayega
+function updateTimerDisplay() {
+    const minutes = Math.floor(pomodoroTimeLeft / 60);
+    const seconds = pomodoroTimeLeft % 60;
+    document.getElementById('pomodoro-timer-display').innerText = 
+        `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+}
+
+// (Optional but Recommended) Ek work session ko database mein log karega
+async function logPomodoroSession() {
+    const taskId = document.getElementById('pomodoro-task-select').value;
+    const userId = await getCurrentUserId();
+    if (!taskId || !userId) return;
+
+    try {
+        const { error } = await supabaseClient.from('time_logs').insert({
+            task_id: taskId,
+            user_id: userId,
+            start_time: new Date(Date.now() - 25 * 60 * 1000), // 25 min pehle
+            end_time: new Date() // Abhi
+        });
+        if (error) throw error;
+        console.log("Pomodoro session logged!");
+    } catch (error) {
+        console.error("Failed to log session:", error);
+    }
+}
+
 function toggleCompletedTasks() {
     const header = document.getElementById('completed-tasks-header');
     const list = document.getElementById('completed-tasks-list');
@@ -969,6 +1096,11 @@ function initializeApp() {
     document.getElementById('sidebar-overlay').onclick = closeSidebar;
     document.getElementById('completed-tasks-header').onclick = toggleCompletedTasks;
     window.toggleBalanceVisibility = toggleBalanceVisibility;
+    document.getElementById('pomodoro-start-btn').onclick = startPomodoro;
+    document.getElementById('pomodoro-pause-btn').onclick = pausePomodoro;
+    document.getElementById('pomodoro-reset-btn').onclick = resetPomodoro;
+
+    document.getElementById('completed-tasks-header').onclick = toggleCompletedTasks;
 
     // --- MODAL EVENT LISTENERS ---
     document.getElementById('add-transaction-fab').onclick = showModal;
