@@ -155,20 +155,34 @@ async function updateCategory(saveButton) {
     } catch (error) { showMessage(`Error updating category: ${error.message}`); renderCategoriesList(); }
 }
 
+// PURANE renderCategoriesList KO ISSE REPLACE KAREIN
 async function renderCategoriesList() {
     const categories = await getCategories();
     const listContainer = document.getElementById('categories-list');
     listContainer.innerHTML = '';
+    
     categories.forEach(categoryName => {
         const item = document.createElement('div');
         item.className = 'category-item';
         item.dataset.categoryName = categoryName;
-        item.innerHTML = `<div class="item-content"><span class="category-name">${categoryName}</span><input type="text" class="edit-category-input hidden" value="${categoryName}"></div><div class="item-actions"><button class="save-btn hidden" onclick="updateCategory(this)">Save</button><button class="remove-btn hidden" onclick="removeCategory('${categoryName}')">Remove</button></div>`;
+        item.innerHTML = `
+            <div class="item-content">
+                <span class="category-name">${categoryName}</span>
+                <input type="text" class="edit-category-input hidden" value="${categoryName}">
+            </div>
+            <div class="item-actions">
+                <button class="save-btn hidden" onclick="updateCategory(this)">Save</button>
+                <button class="remove-btn hidden" onclick="removeCategory('${categoryName}')">Remove</button>
+            </div>
+        `;
+        // Event Listeners
         item.addEventListener('mousedown', () => handlePressStart(item));
-        item.addEventListener('mouseup', () => handlePressEnd(item));
+        item.addEventListener('mouseup', () => handlePressEnd()); // Sirf timer clear karega
         item.addEventListener('mouseleave', () => cancelPress());
         item.addEventListener('touchstart', () => handlePressStart(item), { passive: true });
-        item.addEventListener('touchend', () => handlePressEnd(item));
+        item.addEventListener('touchend', () => handlePressEnd());
+        item.addEventListener('dblclick', () => handleCategoryDoubleClick(item)); // Naya Double Click Listener
+        
         listContainer.appendChild(item);
     });
 }
@@ -239,31 +253,7 @@ async function removeAccount(name) {
     } catch (error) { showMessage(`Error: ${error.message}`); }
 }
 
-// PURANE updateAccount KO DELETE KARKE YEH DO NAYE FUNCTIONS PASTE KAREIN
 
-// Yeh function Edit mode ko ON/OFF karega
-function toggleAccountEdit(editButton) {
-    const item = editButton.closest('.account-item');
-    
-    // Sabhi doosre items ko normal state mein laayein
-    document.querySelectorAll('.account-item').forEach(el => {
-        if (el !== item) {
-            el.querySelector('.item-content > span').classList.remove('hidden');
-            el.querySelector('.edit-account-view').classList.add('hidden');
-            el.querySelector('.edit-btn').classList.remove('hidden');
-            el.querySelector('.save-btn').classList.add('hidden');
-        }
-    });
-
-    // Current item ke elements ko toggle karein
-    item.querySelector('.account-name').classList.toggle('hidden');
-    item.querySelector('.account-balance').classList.toggle('hidden');
-    item.querySelector('.edit-account-view').classList.toggle('hidden');
-    
-    // Buttons ko toggle karein
-    editButton.classList.toggle('hidden');
-    item.querySelector('.save-btn').classList.toggle('hidden');
-}
 
 async function updateAccount(saveButton) {
     const item = saveButton.closest('.account-item');
@@ -307,6 +297,7 @@ async function updateAccount(saveButton) {
     }
 }
 
+// PURANE renderAccountsList KO ISSE REPLACE KAREIN
 async function renderAccountsList() {
     const accounts = await getAccounts();
     const listContainer = document.getElementById('accounts-list');
@@ -321,22 +312,28 @@ async function renderAccountsList() {
             <div class="item-content">
                 <span class="account-name">${acc.name}</span>
                 <span class="account-balance">Balance: ₹${acc.initial_balance.toFixed(2)}</span>
-                
                 <div class="edit-account-view hidden">
                     <input type="text" class="edit-account-input" value="${acc.name}">
                     <input type="number" class="edit-balance-input" value="${acc.initial_balance}">
                 </div>
             </div>
             <div class="item-actions">
-                <button class="edit-btn" onclick="toggleAccountEdit(this)">Edit</button>
                 <button class="save-btn hidden" onclick="updateAccount(this)">Save</button>
-                <button class="remove-btn" onclick="removeAccount('${acc.name}')">Remove</button>
+                <button class="remove-btn hidden" onclick="removeAccount('${acc.name}')">Remove</button>
             </div>
         `;
+
+        // Event Listeners (Category jaise)
+        item.addEventListener('mousedown', () => handleAccountPressStart(item));
+        item.addEventListener('mouseup', () => handleAccountPressEnd());
+        item.addEventListener('mouseleave', () => cancelAccountPress());
+        item.addEventListener('touchstart', () => handleAccountPressStart(item), { passive: true });
+        item.addEventListener('touchend', () => handleAccountPressEnd());
+        item.addEventListener('dblclick', () => handleAccountDoubleClick(item));
+
         listContainer.appendChild(item);
     });
 }
-
 async function populateCategoryFilter() {
     const categories = await getCategories();
     const select = document.getElementById('filter-category');
@@ -757,20 +754,27 @@ function handlePressStart(item) {
         item.querySelector('.remove-btn').classList.remove('hidden');
     }, 2000);
 }
-function handlePressEnd(item) {
-    clearTimeout(pressTimer);
-    if (!longPressTriggered) {
-        if (item.querySelector('.save-btn').classList.contains('hidden')) {
-            resetAllCategoryStates();
-            resetAllAccountStates();
-            item.querySelector('.category-name').classList.add('hidden');
-            const input = item.querySelector('.edit-category-input');
-            input.classList.remove('hidden');
-            input.focus();
-            item.querySelector('.save-btn').classList.remove('hidden');
-        }
+// PURANE handlePressEnd KO ISSE REPLACE KAREIN
+function handlePressEnd() {
+    clearTimeout(pressTimer); // Bas timer ko clear karo
+}
+
+// YEH NAYA FUNCTION ADD KAREIN
+function handleCategoryDoubleClick(item) {
+    if (longPressTriggered) return; // Agar long press ho gaya ho to kuch mat karo
+    
+    // Edit mode on karo
+    if (item.querySelector('.save-btn').classList.contains('hidden')) {
+        resetAllCategoryStates();
+        resetAllAccountStates();
+        item.querySelector('.category-name').classList.add('hidden');
+        const input = item.querySelector('.edit-category-input');
+        input.classList.remove('hidden');
+        input.focus();
+        item.querySelector('.save-btn').classList.remove('hidden');
     }
 }
+
 function cancelPress() { clearTimeout(pressTimer); }
 function resetAllCategoryStates() {
     document.querySelectorAll('.category-item').forEach(item => {
@@ -790,25 +794,31 @@ function handleAccountPressStart(item) {
         item.querySelector('.remove-btn').classList.remove('hidden');
     }, 2000);
 }
-function handleAccountPressEnd(item) {
-    clearTimeout(accountPressTimer);
-    if (!accountLongPressTriggered) {
-        if (item.querySelector('.save-btn').classList.contains('hidden')) {
-            resetAllAccountStates();
-            resetAllCategoryStates();
-            item.querySelector('.account-name').classList.add('hidden');
-            const input = item.querySelector('.edit-account-input');
-            input.classList.remove('hidden');
-            input.focus();
-            item.querySelector('.save-btn').classList.remove('hidden');
-        }
+
+function handleAccountPressEnd() {
+    clearTimeout(accountPressTimer); // Bas timer clear karo
+}
+
+function handleAccountDoubleClick(item) {
+    if (accountLongPressTriggered) return;
+
+    if (item.querySelector('.save-btn').classList.contains('hidden')) {
+        resetAllAccountStates();
+        resetAllCategoryStates();
+        item.querySelector('.account-name').classList.add('hidden');
+        item.querySelector('.account-balance').classList.add('hidden');
+        item.querySelector('.edit-account-view').classList.remove('hidden');
+        item.querySelector('.save-btn').classList.remove('hidden');
+        item.querySelector('.edit-account-view input').focus();
     }
 }
+
 function cancelAccountPress() { clearTimeout(accountPressTimer); }
 function resetAllAccountStates() {
     document.querySelectorAll('.account-item').forEach(item => {
         item.querySelector('.account-name').classList.remove('hidden');
-        item.querySelector('.edit-account-input').classList.add('hidden');
+        item.querySelector('.account-balance').classList.remove('hidden'); // Yeh line add/update hui hai
+        item.querySelector('.edit-account-view').classList.add('hidden'); // Yeh line add/update hui hai
         item.querySelector('.save-btn').classList.add('hidden');
         item.querySelector('.remove-btn').classList.add('hidden');
     });
