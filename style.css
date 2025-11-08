@@ -861,21 +861,30 @@ h1, h2 {
     box-shadow: none;
     border-radius: 0;
 }
-/* NAYA CSS CODE (Aakhir mein paste karein) */
+
+.account-item .item-content {
+    width: 100%; /* Yeh zaroori hai */
+}
 
 .account-item .account-balance {
     font-size: 0.9em;
     color: #555;
-    display: block; /* Naam ke neeche dikhayein */
+    display: block;
     margin-top: 5px;
 }
 
 .edit-account-view {
-    display: flex;
+    /* Yahan se 'display: flex' hata diya gaya hai */
     flex-direction: column;
     gap: 8px;
     margin-top: 5px;
 }
+
+/* Edit view ko by default isse chhupayein */
+.edit-account-view.hidden {
+    display: none;
+}
+
 .edit-account-view input {
     padding: 8px;
     border: 1px solid #007bff;
