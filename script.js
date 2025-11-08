@@ -66,18 +66,38 @@ function showConfirmation(message) {
 
 function showSpinner() { document.getElementById('loading-overlay').style.display = 'flex'; }
 function hideSpinner() { document.getElementById('loading-overlay').style.display = 'none'; }
+function openSidebar() {
+    document.getElementById('sidebar-menu').classList.add('open');
+    document.getElementById('sidebar-overlay').classList.add('active');
+}
 
-function handleTabClick(tabName, element) {
+function closeSidebar() {
+    document.getElementById('sidebar-menu').classList.remove('open');
+    document.getElementById('sidebar-overlay').classList.remove('active');
+}
+
+function handleTabClick(pageName, element) {
     resetAllCategoryStates();
     resetAllAccountStates();
-    document.querySelectorAll('.tab-link').forEach(tab => tab.classList.remove('active'));
-    element.classList.add('active');
+    
+    // Check karo ki click hua element sidebar ka hai ya tab bar ka
+    if (element.classList.contains('sidebar-link')) {
+        // Agar sidebar link hai, to tab bar se active state hata do
+        document.querySelectorAll('.tab-link').forEach(tab => tab.classList.remove('active'));
+    } else if (element.classList.contains('tab-link')) {
+        // Agar tab link hai, to sabhi tab links se active state manage karo
+        document.querySelectorAll('.tab-link').forEach(tab => tab.classList.remove('active'));
+        element.classList.add('active');
+    }
+    
     document.querySelectorAll('.page-content').forEach(page => page.classList.add('hidden'));
     
-    if (tabName === 'Home') document.getElementById('home-page').classList.remove('hidden');
-    else if (tabName === 'Category') { document.getElementById('category-page').classList.remove('hidden'); renderCategoriesList(); } 
-    else if (tabName === 'Accounts') { document.getElementById('accounts-page').classList.remove('hidden'); renderAccountsList(); } 
-    else if (tabName === 'Transaction') { document.getElementById('transaction-page').classList.remove('hidden'); fetchData(); }
+    if (pageName === 'Home') document.getElementById('home-page').classList.remove('hidden');
+    else if (pageName === 'Category') { document.getElementById('category-page').classList.remove('hidden'); renderCategoriesList(); } 
+    else if (pageName === 'Accounts') { document.getElementById('accounts-page').classList.remove('hidden'); renderAccountsList(); } 
+    else if (pageName === 'Transaction') { document.getElementById('transaction-page').classList.remove('hidden'); fetchData(); }
+
+    closeSidebar(); // Hamesha sidebar ko band kar do
 }
 
 // ====== CATEGORY MANAGEMENT ======
@@ -539,16 +559,18 @@ function resetAllAccountStates() {
 }
 
 // ====== APP INITIALIZATION ======
+// PURANE initializeApp KO ISSE REPLACE KAREIN
 function initializeApp() {
     console.log("Loading initial data...");
     fetchData(); 
-    // YEH DO FUNCTIONS AB ZAROORI NAHI HAIN
-    // populatePaymentModesDropdown(); 
-    // populateCategoriesDropdown();
     populateCategoryFilter();
     populateAccountFilter();
     handleChartFilterClick('thisMonth');
     
+    // --- SIDEBAR EVENT LISTENERS ---
+    document.getElementById('menu-btn').onclick = openSidebar;
+    document.getElementById('sidebar-overlay').onclick = closeSidebar;
+
     // --- MODAL EVENT LISTENERS ---
     document.getElementById('add-transaction-fab').onclick = showModal;
     document.getElementById('modal-close-btn').onclick = hideModal;
@@ -563,9 +585,10 @@ function initializeApp() {
             selectedModalType = btn.dataset.type;
         };
     });
-}
 
-const logoutButton = document.getElementById('logout-btn');
-if (logoutButton) {
-    logoutButton.addEventListener('click', logoutUser);
+    // --- LOGOUT BUTTON LISTENER ---
+    const logoutButton = document.getElementById('logout-btn');
+    if (logoutButton) {
+        logoutButton.addEventListener('click', logoutUser);
+    }
 }
