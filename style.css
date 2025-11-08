@@ -890,3 +890,30 @@ h1, h2 {
     border: 1px solid #007bff;
     border-radius: 4px;
 }
+/* NAYA CSS CODE (Aakhir mein paste karein) */
+
+/* --- Balance Card Visibility Toggle --- */
+.balance-item {
+    align-items: center; /* Vertically center align karein */
+}
+
+.balance-value-container {
+    display: flex;
+    align-items: center;
+    gap: 15px; /* Balance aur icon ke beech space */
+}
+
+.visibility-toggle-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0 5px;
+    display: flex;
+    align-items: center;
+}
+
+.visibility-toggle-btn svg {
+    width: 22px;
+    height: 22px;
+    fill: rgba(255, 255, 255, 0.8); /* Icon ka halka safed color */
+}
