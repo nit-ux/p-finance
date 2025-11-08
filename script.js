@@ -90,10 +90,49 @@ async function addCategory() {
 }
 
 async function removeCategory(name) {
-    const { error } = await supabaseClient.from('categories').delete().eq('name', name);
-    if (error) { showMessage(`Error: ${error.message}`); return; }
-    renderCategoriesList();
-    populateCategoriesDropdown();
+    try {
+        // Step 1: Check karein ki is category mein kitne transactions hain
+        const { count, error: checkError } = await supabaseClient
+            .from('transactions')
+            .select('*', { count: 'exact', head: true })
+            .eq('category', name);
+
+        if (checkError) throw checkError;
+
+        let confirmed = true; // Maan ke chalo ki delete karna hai
+
+        // Step 2: Agar transactions hain, to user se confirm karo
+        if (count > 0) {
+            confirmed = confirm(
+                `"${name}" category is used in ${count} transaction(s).\n\nAre you sure you want to delete this category AND all its related transactions permanently? This action cannot be undone.`
+            );
+        }
+
+        // Step 3: Agar user ne confirm kiya hai, tab hi aage badho
+        if (confirmed) {
+            // Pehle saare related transactions delete karo
+            if (count > 0) {
+                const { error: txError } = await supabaseClient
+                    .from('transactions')
+                    .delete()
+                    .eq('category', name);
+                if (txError) throw txError;
+            }
+
+            // Fir category ko delete karo
+            const { error: catError } = await supabaseClient
+                .from('categories')
+                .delete()
+                .eq('name', name);
+            if (catError) throw catError;
+
+            // UI refresh karo
+            renderCategoriesList();
+            populateCategoriesDropdown();
+        }
+    } catch (error) {
+        showMessage(`Error: ${error.message}`);
+    }
 }
 
 async function updateCategory(saveButton) {
@@ -198,10 +237,49 @@ async function addAccount() {
 }
 
 async function removeAccount(name) {
-    const { error } = await supabaseClient.from('accounts').delete().eq('name', name);
-    if (error) { showMessage(`Error: ${error.message}`); return; }
-    renderAccountsList();
-    populatePaymentModesDropdown();
+    try {
+        // Step 1: Check karein ki is account mein kitne transactions hain
+        const { count, error: checkError } = await supabaseClient
+            .from('transactions')
+            .select('*', { count: 'exact', head: true })
+            .eq('payment_mode', name);
+
+        if (checkError) throw checkError;
+
+        let confirmed = true;
+
+        // Step 2: Agar transactions hain, to user se confirm karo
+        if (count > 0) {
+            confirmed = confirm(
+                `"${name}" account is used in ${count} transaction(s).\n\nAre you sure you want to delete this account AND all its related transactions permanently? This action cannot be undone.`
+            );
+        }
+
+        // Step 3: Agar user ne confirm kiya hai, tab hi aage badho
+        if (confirmed) {
+            // Pehle saare related transactions delete karo
+            if (count > 0) {
+                const { error: txError } = await supabaseClient
+                    .from('transactions')
+                    .delete()
+                    .eq('payment_mode', name);
+                if (txError) throw txError;
+            }
+
+            // Fir account ko delete karo
+            const { error: accError } = await supabaseClient
+                .from('accounts')
+                .delete()
+                .eq('name', name);
+            if (accError) throw accError;
+
+            // UI refresh karo
+            renderAccountsList();
+            populatePaymentModesDropdown();
+        }
+    } catch (error) {
+        showMessage(`Error: ${error.message}`);
+    }
 }
 
 async function updateAccount(saveButton) {
@@ -271,13 +349,20 @@ async function populatePaymentModesDropdown() {
 async function fetchData() {
     try {
         const accountsData = await getAccounts();
-        const { data: allTxData, error: allTxError } = await supabaseClient.from('transactions').select('amount, payment_mode');
+        const { data: allTxData, error: allTxError } = await supabaseClient.from('transactions').select('amount, payment_mode, type');
         if (allTxError) throw allTxError;
 
         const balances = {};
         accountsData.forEach(acc => { balances[acc.name] = acc.initial_balance || 0; });
+        
         allTxData.forEach(tx => {
-            if (balances[tx.payment_mode] !== undefined) { balances[tx.payment_mode] += tx.amount; }
+            if (balances[tx.payment_mode] !== undefined) {
+                 if (tx.type.toUpperCase() === 'INCOME') {
+                    balances[tx.payment_mode] += Math.abs(tx.amount);
+                } else if (tx.type.toUpperCase() === 'EXPENSE') {
+                    balances[tx.payment_mode] -= Math.abs(tx.amount);
+                }
+            }
         });
         
         const currencyFormat = { style: 'currency', currency: 'INR' };
@@ -311,6 +396,7 @@ async function fetchData() {
     }
 }
 
+
 async function addData() {
     const date = document.getElementById('add-date').value;
     const type = document.getElementById('add-type').value;
@@ -323,9 +409,10 @@ async function addData() {
     if (!userId || !date || !type || !category || !amount || !description || !paymentMode) {
         showMessage('Please fill all required fields.'); return;
     }
-
-    if (type === 'EXPENSE') amount = -Math.abs(amount);
     
+    // Amount is always stored as a positive number
+    amount = Math.abs(amount);
+
     try {
         const { error } = await supabaseClient.from('transactions').insert([{ 
             transaction_date: date, type, category, amount, notes: description, payment_mode: paymentMode, user_id: userId 
@@ -339,6 +426,7 @@ async function addData() {
         showMessage(`Failed to add data: ${error.message}`);
     }
 }
+
 
 function displayTransactions() {
     const dataContainer = document.getElementById('data-container');
@@ -355,19 +443,26 @@ function displayTransactions() {
     let contentToAdd = '';
     for (let i = start; i < end; i++) {
         const row = allTransactions[i];
-        const { transaction_date, type, category, amount, notes } = row;
+        const { transaction_date, type, category, amount, notes, payment_mode } = row;
         const cardClass = type.toUpperCase() === 'INCOME' ? 'income-card' : 'expense-card';
         const date = new Date(transaction_date);
         const formattedDate = `${String(date.getDate()).padStart(2, '0')}-${String(date.getMonth() + 1).padStart(2, '0')}-${date.getFullYear()}`;
+        
+        // Displaying payment_mode in the card footer
         contentToAdd += `
             <div class="transaction-card ${cardClass}">
                 <div class="card-header">
                     <span>${category}</span>
-                    <span>${new Intl.NumberFormat('en-IN', currencyFormat).format(Math.abs(amount))}</span>
+                    <span style="color: ${type.toUpperCase() === 'INCOME' ? 'green' : 'red'};">
+                        ${type.toUpperCase() === 'INCOME' ? '+' : '-'} ${new Intl.NumberFormat('en-IN', currencyFormat).format(amount)}
+                    </span>
+                </div>
+                <div class="card-body">
+                    <p>${notes || ''}</p>
                 </div>
                 <div class="card-footer">
-                    <span>${notes || ''}</span>
-                    <span>${formattedDate}</span>
+                    <span><small>${payment_mode}</small></span>
+                    <span><small>${formattedDate}</small></span>
                 </div>
             </div>`;
     }
@@ -376,6 +471,7 @@ function displayTransactions() {
     currentlyDisplayedCount = end;
     loadMoreBtn.style.display = currentlyDisplayedCount < allTransactions.length ? 'inline-block' : 'none';
 }
+
 
 function loadMore() { displayTransactions(); }
 function clearFormFields() { 
