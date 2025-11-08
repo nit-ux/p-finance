@@ -334,3 +334,33 @@ h1, h2 { color: #0056b3; text-align: center; }
     color: #333;
     border: 1px solid #ccc;
 }
+/* NAYA CSS CODE (Aakhir mein paste karein) */
+
+.loading-overlay {
+    position: fixed; /* Poori screen par failaayein */
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(255, 255, 255, 0.7); /* Halka safed background */
+    z-index: 3000; /* Sabse upar dikhayein */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    display: none; /* Default mein hidden */
+}
+
+.spinner {
+    width: 60px;
+    height: 60px;
+    border: 8px solid #f3f3f3; /* Spinner ka halka grey border */
+    border-top: 8px solid #007bff; /* Spinner ka blue hissa */
+    border-radius: 50%;
+    animation: spin 1s linear infinite; /* Ghoomne ka animation */
+}
+
+/* Animation ke liye keyframes */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
