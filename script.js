@@ -182,10 +182,9 @@ async function getAccounts() {
 
 async function addAccount() {
     const nameInput = document.getElementById('new-account-name');
-    const balanceInput = document.getElementById('new-account-balance'); // Naya input field
+    const balanceInput = document.getElementById('new-account-balance');
 
     const newName = nameInput.value.trim();
-    // Balance ko number mein convert karo, agar khaali hai to 0 maano
     const initialBalance = parseFloat(balanceInput.value) || 0;
 
     if (!newName) {
@@ -201,22 +200,20 @@ async function addAccount() {
         const { error } = await supabaseClient.from('accounts').insert([{ 
             name: newName, 
             user_id: userId, 
-            initial_balance: initialBalance, // Yahan naya balance use karo
+            initial_balance: initialBalance,
             type: 'general' 
         }]);
 
         if (error) throw error;
 
-        // Form fields ko clear karo
         nameInput.value = '';
         balanceInput.value = '';
 
-        // UI ko turant update karo
         await renderAccountsList();
-        await populateAccountFilter(); // Filter dropdown ko bhi update karo
+        await populateAccountFilter();
         
     } catch (error) {
-        showMessage(`Error: ${error.message}`);
+        showMessage(`Error adding account: ${error.message}`);
     } finally {
         hideSpinner();
     }
@@ -242,18 +239,72 @@ async function removeAccount(name) {
     } catch (error) { showMessage(`Error: ${error.message}`); }
 }
 
+// PURANE updateAccount KO DELETE KARKE YEH DO NAYE FUNCTIONS PASTE KAREIN
+
+// Yeh function Edit mode ko ON/OFF karega
+function toggleAccountEdit(editButton) {
+    const item = editButton.closest('.account-item');
+    
+    // Sabhi doosre items ko normal state mein laayein
+    document.querySelectorAll('.account-item').forEach(el => {
+        if (el !== item) {
+            el.querySelector('.item-content > span').classList.remove('hidden');
+            el.querySelector('.edit-account-view').classList.add('hidden');
+            el.querySelector('.edit-btn').classList.remove('hidden');
+            el.querySelector('.save-btn').classList.add('hidden');
+        }
+    });
+
+    // Current item ke elements ko toggle karein
+    item.querySelector('.account-name').classList.toggle('hidden');
+    item.querySelector('.account-balance').classList.toggle('hidden');
+    item.querySelector('.edit-account-view').classList.toggle('hidden');
+    
+    // Buttons ko toggle karein
+    editButton.classList.toggle('hidden');
+    item.querySelector('.save-btn').classList.toggle('hidden');
+}
+
 async function updateAccount(saveButton) {
     const item = saveButton.closest('.account-item');
     const oldName = item.dataset.accountName;
+    
     const newName = item.querySelector('.edit-account-input').value.trim();
-    if (!newName) { showMessage('Account name cannot be empty.'); return; }
+    const newBalance = parseFloat(item.querySelector('.edit-balance-input').value) || 0;
+
+    if (!newName) {
+        showMessage('Account name cannot be empty.');
+        return;
+    }
+
+    showSpinner();
     try {
-        const { error: txError } = await supabaseClient.from('transactions').update({ payment_mode: newName }).eq('payment_mode', oldName);
-        if (txError) throw txError;
-        const { error: accError } = await supabaseClient.from('accounts').update({ name: newName }).eq('name', oldName);
+        // Step 1: `accounts` table ko update karo
+        const { error: accError } = await supabaseClient
+            .from('accounts')
+            .update({ name: newName, initial_balance: newBalance })
+            .eq('name', oldName);
         if (accError) throw accError;
-        renderAccountsList();
-    } catch (error) { showMessage(`Error updating account: ${error.message}`); renderAccountsList(); }
+
+        // Step 2: Agar naam badla hai, to `transactions` table ko bhi update karo
+        if (oldName !== newName) {
+            const { error: txError } = await supabaseClient
+                .from('transactions')
+                .update({ payment_mode: newName })
+                .eq('payment_mode', oldName);
+            if (txError) throw txError;
+        }
+
+        await renderAccountsList();
+        await populateAccountFilter();
+        await fetchData(); // Home page par balance update karne ke liye
+
+    } catch (error) {
+        showMessage(`Error updating account: ${error.message}`);
+        renderAccountsList(); // Error hone par UI reset karo
+    } finally {
+        hideSpinner();
+    }
 }
 
 async function renderAccountsList() {
@@ -264,12 +315,24 @@ async function renderAccountsList() {
         const item = document.createElement('div');
         item.className = 'account-item';
         item.dataset.accountName = acc.name;
-        item.innerHTML = `<div class="item-content"><span class="account-name">${acc.name}</span><input type="text" class="edit-account-input hidden" value="${acc.name}"></div><div class="item-actions"><button class="save-btn hidden" onclick="updateAccount(this)">Save</button><button class="remove-btn hidden" onclick="removeAccount('${acc.name}')">Remove</button></div>`;
-        item.addEventListener('mousedown', () => handleAccountPressStart(item));
-        item.addEventListener('mouseup', () => handleAccountPressEnd(item));
-        item.addEventListener('mouseleave', () => cancelAccountPress());
-        item.addEventListener('touchstart', () => handleAccountPressStart(item), { passive: true });
-        item.addEventListener('touchend', () => handleAccountPressEnd(item));
+        item.dataset.initialBalance = acc.initial_balance;
+
+        item.innerHTML = `
+            <div class="item-content">
+                <span class="account-name">${acc.name}</span>
+                <span class="account-balance">Balance: ₹${acc.initial_balance.toFixed(2)}</span>
+                
+                <div class="edit-account-view hidden">
+                    <input type="text" class="edit-account-input" value="${acc.name}">
+                    <input type="number" class="edit-balance-input" value="${acc.initial_balance}">
+                </div>
+            </div>
+            <div class="item-actions">
+                <button class="edit-btn" onclick="toggleAccountEdit(this)">Edit</button>
+                <button class="save-btn hidden" onclick="updateAccount(this)">Save</button>
+                <button class="remove-btn" onclick="removeAccount('${acc.name}')">Remove</button>
+            </div>
+        `;
         listContainer.appendChild(item);
     });
 }
