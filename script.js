@@ -765,6 +765,25 @@ function initializeApp() {
     populateCategoryFilter();
     populateAccountFilter();
     handleChartFilterClick('thisMonth');
+    document.getElementById('add-transaction-fab').onclick = showModal;
+    document.getElementById('modal-close-btn').onclick = hideModal;
+    document.getElementById('modal-save-btn').onclick = saveTransactionFromModal;
+
+    // Overlay par click karne se modal band ho jayega
+    document.getElementById('transaction-modal-overlay').onclick = (event) => {
+        if (event.target.id === 'transaction-modal-overlay') {
+            hideModal();
+        }
+    };
+
+    // Income/Expense buttons ke liye logic
+    document.querySelectorAll('.type-btn').forEach(btn => {
+        btn.onclick = () => {
+            document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            selectedModalType = btn.dataset.type;
+        };
+    });
 }
 
 const logoutButton = document.getElementById('logout-btn');
