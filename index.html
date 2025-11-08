@@ -36,18 +36,6 @@
             <div class="chart-container">
             <canvas id="expenseChart"></canvas>
         </div>
-        <div class="input-form">
-            <input type="date" id="add-date" name="date" required="true" />
-            <select id="add-type" name="type" required="true">
-                <option value="INCOME">INCOME</option>
-                <option value="EXPENSE">EXPENSE</option>
-            </select>
-            <select id="add-category" name="category" required="true"></select>
-            <select id="add-paymentMode" name="paymentMode" required="true"></select>
-            <input type="number" id="add-amount" name="amount" placeholder="Amount" required="true" />
-            <input type="text" id="add-description" name="description" placeholder="Description" class="full-width" required="true" />
-            <button onclick="addData()">ADD DATA</button>
-        </div>
     </div>
     
     <!-- PAGE FOR CATEGORIES -->
@@ -122,5 +110,47 @@
 
 <!-- Yeh ab main app ki script file hai -->
 <script src="script.js"></script>
+<!-- Floating Action Button (FAB) -->
+<button id="add-transaction-fab" class="fab">+</button>
+
+<!-- Transaction Modal Overlay -->
+<div id="transaction-modal-overlay" class="modal-overlay">
+    <!-- Modal Content -->
+    <div id="transaction-modal-content" class="modal-content">
+        <div class="modal-header">
+            <h3>Add Transaction</h3>
+            <button id="modal-close-btn" class="close-btn">&times;</button>
+        </div>
+        
+        <div class="modal-body">
+            <!-- Type Selector (Income/Expense) -->
+            <div id="modal-type-selector" class="type-selector">
+                <button class="type-btn active" data-type="EXPENSE">Expense</button>
+                <button class="type-btn" data-type="INCOME">Income</button>
+            </div>
+            
+            <!-- Date Input -->
+            <input type="date" id="modal-date">
+            
+            <!-- Accounts (Payment Modes) Selector -->
+            <p class="selector-label">From Account:</p>
+            <div id="modal-accounts-selector" class="horizontal-selector"></div>
+
+            <!-- Amount Input -->
+            <input type="number" id="modal-amount" placeholder="0.00">
+            
+            <!-- Description Input -->
+            <input type="text" id="modal-description" placeholder="Add a note...">
+
+            <!-- Category Selector -->
+            <p class="selector-label">Category:</p>
+            <div id="modal-categories-selector" class="horizontal-selector"></div>
+            
+            <!-- Save Button -->
+            <button id="modal-save-btn" class="save-transaction-btn">SAVE TRANSACTION</button>
+        </div>
+    </div>
+</div>
+    
 </body>
 </html>
