@@ -165,7 +165,6 @@ async function addCategory(type) {
     await renderCategoriesList(); // List ko refresh karo
     input.value = '';
    }
-}
 
 async function removeCategory(name) {
     try {
