@@ -3,63 +3,6 @@
 const SUPABASE_URL = 'https://wfwjcbbylwmozqcddigc.supabase.co/'; // Yahan apna Supabase Project URL daalein
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indmd2pjYmJ5bHdtb3pxY2RkaWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIxMzk1MTQsImV4cCI6MjA3NzcxNTUxNH0.5hNH22mvpECQzfEgQsQRIbuWNm4XenUszgd21oOEif8'; // Yahan apni Supabase Anon Key daalein
 
-// CORRECTED INITIALIZATION: Yahan galti theek kar di gayi hai
-const { createClient } = supabase;
-const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-let isLoginMode = true;
-
-// Check karein ki user pehle se logged-in hai ya nahi
-supabaseClient.auth.onAuthStateChange((event, session) => {
-    if (session && session.user) {
-        // Agar user logged-in hai, to use seedhe main app (index.html) par bhej do
-        window.location.href = 'index.html';
-    }
-});
-
-function toggleAuthMode() {
-    isLoginMode = !isLoginMode;
-    document.getElementById('auth-title').innerText = isLoginMode ? 'Login' : 'Sign Up';
-    document.getElementById('auth-action-btn').innerText = isLoginMode ? 'Login' : 'Sign Up';
-    document.getElementById('auth-toggle-text').innerHTML = isLoginMode 
-        ? 'Don\'t have an account? <a href="#" onclick="toggleAuthMode()">Sign Up</a>'
-        : 'Already have an account? <a href="#" onclick="toggleAuthMode()">Login</a>';
-    document.getElementById('auth-error').innerText = '';
-}
-
-async function handleAuthAction() {
-    const email = document.getElementById('auth-email').value;
-    const password = document.getElementById('auth-password').value;
-    const authError = document.getElementById('auth-error');
-    authError.innerText = '';
-
-    try {
-        const { error } = isLoginMode
-            ? await supabaseClient.auth.signInWithPassword({ email, password })
-            : await supabaseClient.auth.signUp({ email, password });
-
-        if (error) throw error;
-
-        if (!isLoginMode) {
-            alert("Signup successful! Please check your email to verify your account before logging in.");
-        }
-    } catch (error) {
-        authError.innerText = error.message;
-    }
-}```
-
----
-
-### **Step 2: Apni `script.js` (Main App) file ko is code se poora replace karein**
-
-**Ismein bhi apni Supabase keys zaroor daalein.**
-
-```javascript
-// ====== SUPABASE SETUP for MAIN APP ======
-const SUPABASE_URL = 'YOUR_SUPABASE_URL';
-const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
-
-// CORRECTED INITIALIZATION: Yahan bhi galti theek kar di gayi hai
 const { createClient } = supabase;
 const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -74,12 +17,9 @@ let longPressTriggered = false;
 supabaseClient.auth.onAuthStateChange((event, session) => {
     if (!session || !session.user) {
         window.location.href = 'login.html';
-    } else {
-        console.log('User is authenticated. Initializing app...');
     }
 });
 
-// Yeh function page load hote hi chalega to check session and initialize
 (async () => {
     const { data: { session } } = await supabaseClient.auth.getSession();
     if (session && session.user) {
@@ -88,7 +28,6 @@ supabaseClient.auth.onAuthStateChange((event, session) => {
         window.location.href = 'login.html';
     }
 })();
-
 
 async function logoutUser() {
     await supabaseClient.auth.signOut();
@@ -169,6 +108,41 @@ async function updateCategory(saveButton) {
     populateCategoriesDropdown();
 }
 
+async function renderCategoriesList() {
+    const categories = await getCategories();
+    const listContainer = document.getElementById('categories-list');
+    listContainer.innerHTML = '';
+    
+    categories.forEach(categoryName => {
+        const item = document.createElement('div');
+        item.className = 'category-item';
+        item.dataset.categoryName = categoryName;
+        item.innerHTML = `
+            <div class="item-content">
+                <span class="category-name">${categoryName}</span>
+                <input type="text" class="edit-category-input hidden" value="${categoryName}">
+            </div>
+            <div class="item-actions">
+                <button class="save-btn hidden" onclick="updateCategory(this)">Save</button>
+                <button class="remove-btn hidden" onclick="removeCategory('${categoryName}')">Remove</button>
+            </div>
+        `;
+        item.addEventListener('mousedown', () => handlePressStart(item));
+        item.addEventListener('mouseup', () => handlePressEnd(item));
+        item.addEventListener('mouseleave', () => cancelPress());
+        item.addEventListener('touchstart', () => handlePressStart(item), { passive: true });
+        item.addEventListener('touchend', () => handlePressEnd(item));
+        listContainer.appendChild(item);
+    });
+}
+
+async function populateCategoriesDropdown() {
+    const categories = await getCategories();
+    const select = document.getElementById('add-category');
+    select.innerHTML = '<option value="" disabled selected>Select Category</option>';
+    categories.forEach(name => select.innerHTML += `<option value="${name}">${name}</option>`);
+}
+
 // ====== ACCOUNT MANAGEMENT ======
 async function getAccounts() {
     const { data, error } = await supabaseClient.from('accounts').select('name, initial_balance');
@@ -196,6 +170,30 @@ async function removeAccount(name) {
     if (error) { showMessage(`Error: ${error.message}`); return; }
     renderAccountsList();
     populatePaymentModesDropdown();
+}
+
+async function renderAccountsList() {
+    const accounts = await getAccounts();
+    const listContainer = document.getElementById('accounts-list');
+    listContainer.innerHTML = '';
+    accounts.forEach(acc => {
+        const item = document.createElement('div');
+        item.className = 'account-item';
+        item.innerHTML = `
+            <span class="item-content">${acc.name}</span>
+            <div class="item-actions">
+                <button class="remove-btn" onclick="removeAccount('${acc.name}')">Remove</button>
+            </div>
+        `;
+        listContainer.appendChild(item);
+    });
+}
+
+async function populatePaymentModesDropdown() {
+    const accounts = await getAccounts();
+    const select = document.getElementById('add-paymentMode');
+    select.innerHTML = '<option value="" disabled selected>Payment Mode</option>';
+    accounts.forEach(acc => select.innerHTML += `<option value="${acc.name}">${acc.name}</option>`);
 }
 
 // ====== CORE APP LOGIC ======
@@ -271,65 +269,6 @@ async function addData() {
     }
 }
 
-// Baaki sabhi functions (render list, display transactions, etc.) neeche hain
-// ... iske neeche ka code pehle jaisa hi hai ...
-async function renderCategoriesList() {
-    const categories = await getCategories();
-    const listContainer = document.getElementById('categories-list');
-    listContainer.innerHTML = '';
-    
-    categories.forEach(categoryName => {
-        const item = document.createElement('div');
-        item.className = 'category-item';
-        item.dataset.categoryName = categoryName;
-
-        item.innerHTML = `
-            <div class="item-content">
-                <span class="category-name">${categoryName}</span>
-                <input type="text" class="edit-category-input hidden" value="${categoryName}">
-            </div>
-            <div class="item-actions">
-                <button class="save-btn hidden" onclick="updateCategory(this)">Save</button>
-                <button class="remove-btn hidden" onclick="removeCategory('${categoryName}')">Remove</button>
-            </div>
-        `;
-        
-        item.addEventListener('mousedown', () => handlePressStart(item));
-        item.addEventListener('mouseup', () => handlePressEnd(item));
-        item.addEventListener('mouseleave', () => cancelPress());
-        item.addEventListener('touchstart', () => handlePressStart(item), { passive: true });
-        item.addEventListener('touchend', () => handlePressEnd(item));
-        listContainer.appendChild(item);
-    });
-}
-async function populateCategoriesDropdown() {
-    const categories = await getCategories();
-    const select = document.getElementById('add-category');
-    select.innerHTML = '<option value="" disabled selected>Select Category</option>';
-    categories.forEach(name => select.innerHTML += `<option value="${name}">${name}</option>`);
-}
-async function renderAccountsList() {
-    const accounts = await getAccounts();
-    const listContainer = document.getElementById('accounts-list');
-    listContainer.innerHTML = '';
-    accounts.forEach(acc => {
-        const item = document.createElement('div');
-        item.className = 'account-item';
-        item.innerHTML = `
-            <span class="item-content">${acc.name}</span>
-            <div class="item-actions">
-                <button class="remove-btn" onclick="removeAccount('${acc.name}')">Remove</button>
-            </div>
-        `;
-        listContainer.appendChild(item);
-    });
-}
-async function populatePaymentModesDropdown() {
-    const accounts = await getAccounts();
-    const select = document.getElementById('add-paymentMode');
-    select.innerHTML = '<option value="" disabled selected>Payment Mode</option>';
-    accounts.forEach(acc => select.innerHTML += `<option value="${acc.name}">${acc.name}</option>`);
-}
 function displayTransactions() {
     const dataContainer = document.getElementById('data-container');
     const loadMoreBtn = document.getElementById('load-more-btn');
@@ -342,31 +281,42 @@ function displayTransactions() {
     const start = currentlyDisplayedCount;
     const end = Math.min(start + transactionsPerLoad, allTransactions.length);
 
+    let contentToAdd = '';
     for (let i = start; i < end; i++) {
         const row = allTransactions[i];
         const { transaction_date, type, category, amount, notes } = row;
-        const card = document.createElement('div');
-        card.className = 'transaction-card';
-        card.style.backgroundColor = type.toUpperCase() === 'INCOME' ? '#28a745' : '#dc3545';
-        card.style.color = 'white';
+        const cardClass = type.toUpperCase() === 'INCOME' ? 'income-card' : 'expense-card';
         const date = new Date(transaction_date);
         const formattedDate = `${String(date.getDate()).padStart(2, '0')}-${String(date.getMonth() + 1).padStart(2, '0')}-${date.getFullYear()}`;
-        card.innerHTML = `
-            <div class="card-header">
-                <span>${category}</span>
-                <span>${new Intl.NumberFormat('en-IN', currencyFormat).format(Math.abs(amount))}</span>
-            </div>
-            <div class="card-footer">
-                <span>${notes || ''}</span>
-                <span>${formattedDate}</span>
+        contentToAdd += `
+            <div class="transaction-card ${cardClass}">
+                <div class="card-header">
+                    <span>${category}</span>
+                    <span>${new Intl.NumberFormat('en-IN', currencyFormat).format(Math.abs(amount))}</span>
+                </div>
+                <div class="card-footer">
+                    <span>${notes || ''}</span>
+                    <span>${formattedDate}</span>
+                </div>
             </div>`;
-        dataContainer.appendChild(card);
     }
+    dataContainer.innerHTML += contentToAdd;
+
     currentlyDisplayedCount = end;
     loadMoreBtn.style.display = currentlyDisplayedCount < allTransactions.length ? 'inline-block' : 'none';
 }
+
 function loadMore() { displayTransactions(); }
-function clearFormFields() { document.querySelector('.input-form').reset(); }
+function clearFormFields() { 
+    document.getElementById('add-date').value = '';
+    document.getElementById('add-type').selectedIndex = 0;
+    document.getElementById('add-category').selectedIndex = 0;
+    document.getElementById('add-paymentMode').selectedIndex = 0;
+    document.getElementById('add-amount').value = '';
+    document.getElementById('add-description').value = '';
+}
+
+// ====== EVENT LISTENERS & INTERACTION ======
 function handlePressStart(item) {
     longPressTriggered = false;
     pressTimer = setTimeout(() => {
@@ -375,6 +325,7 @@ function handlePressStart(item) {
         item.querySelector('.remove-btn').classList.remove('hidden');
     }, 2000);
 }
+
 function handlePressEnd(item) {
     clearTimeout(pressTimer);
     if (!longPressTriggered) {
@@ -388,7 +339,9 @@ function handlePressEnd(item) {
         }
     }
 }
+
 function cancelPress() { clearTimeout(pressTimer); }
+
 function resetAllCategoryStates() {
     document.querySelectorAll('.category-item').forEach(item => {
         item.querySelector('.category-name').classList.remove('hidden');
