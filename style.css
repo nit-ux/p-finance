@@ -364,3 +364,21 @@ h1, h2 { color: #0056b3; text-align: center; }
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
 }
+/* NAYA CSS CODE (Aakhir mein paste karein) */
+
+.filters {
+    align-items: center;
+    gap: 10px; /* Thoda kam gap */
+}
+
+.filters input, .filters select {
+    padding: 8px; /* Consistent padding */
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+/* Search bar ko zyada jagah do */
+.search-bar {
+    flex-grow: 1; /* Yeh search bar ko bachi hui jagah de dega */
+    min-width: 150px;
+}
