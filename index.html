@@ -10,196 +10,163 @@
 </head>
 <body>
 
-  <div id="loading-overlay" class="loading-overlay">
-    <div class="spinner"></div>
-</div>  
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="spinner"></div>
+    </div>  
 
-<header class="app-header">
-    <!-- Left side: Menu Icon -->
-    <button id="menu-btn" class="menu-btn" title="Menu">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M0 96C0 78.3 14.3 64 32 64H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32C14.3 128 0 113.7 0 96zM0 256c0-17.7 14.3-32 32-32H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32c-17.7 0-32-14.3-32-32zM448 416c0 17.7-14.3 32-32 32H32c-17.7 0-32-14.3-32-32s14.3-32 32-32H416c17.7 0 32 14.3 32 32z"/></svg>
-    </button>
-    
-    <!-- Center: Title -->
-    <h2>Advanced Cashbook</h2>
-    
-    <!-- Right side: Logout Icon -->
-    <button id="logout-btn" class="logout-icon-btn" title="Logout">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path d="M377.9 105.9L500.7 228.7c7.2 7.2 11.3 17.1 11.3 27.3s-4.1 20.1-11.3 27.3L377.9 406.1c-6.4 6.4-15 9.9-24 9.9c-18.7 0-33.9-15.2-33.9-33.9l0-62.1-128 0c-17.7 0-32-14.3-32-32l0-64c0-17.7 14.3-32 32-32l128 0 0-62.1c0-18.7 15.2-33.9 33.9-33.9c9 0 17.6 3.6 24 9.9zM160 96L96 96c-17.7 0-32 14.3-32 32l0 256c0 17.7 14.3 32 32 32l64 0c17.7 0 32 14.3 32 32s-14.3 32-32 32l-64 0c-53 0-96-43-96-96L0 128C0 75 43 32 96 32l64 0c17.7 0 32 14.3 32 32s-14.3 32-32 32z"/></svg>
-    </button>
-</header>
+    <header class="app-header">
+        <button id="menu-btn" class="menu-btn" title="Menu">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M0 96C0 78.3 14.3 64 32 64H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32C14.3 128 0 113.7 0 96zM0 256c0-17.7 14.3-32 32-32H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32c-17.7 0-32-14.3-32-32zM448 416c0 17.7-14.3 32-32 32H32c-17.7 0-32-14.3-32-32s14.3-32 32-32H416c17.7 0 32 14.3 32 32z"/></svg>
+        </button>
+        <h2>Advanced Cashbook</h2>
+        <button id="logout-btn" class="logout-icon-btn" title="Logout">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path d="M377.9 105.9L500.7 228.7c7.2 7.2 11.3 17.1 11.3 27.3s-4.1 20.1-11.3 27.3L377.9 406.1c-6.4 6.4-15 9.9-24 9.9c-18.7 0-33.9-15.2-33.9-33.9l0-62.1-128 0c-17.7 0-32-14.3-32-32l0-64c0-17.7 14.3-32 32-32l128 0 0-62.1c0-18.7 15.2-33.9 33.9-33.9c9 0 17.6 3.6 24 9.9zM160 96L96 96c-17.7 0-32 14.3-32 32l0 256c0 17.7 14.3 32 32 32l64 0c17.7 0 32 14.3 32 32s-14.3 32-32 32l-64 0c-53 0-96-43-96-96L0 128C0 75 43 32 96 32l64 0c17.7 0 32 14.3 32 32s-14.3 32-32 32z"/></svg>
+        </button>
+    </header>
 
-<!-- Sidebar Overlay -->
-<div id="sidebar-overlay" class="overlay"></div>
+    <div id="sidebar-overlay" class="overlay"></div>
 
-<!-- Sidebar Menu -->
-<nav id="sidebar-menu" class="sidebar">
-    <div class="sidebar-header">
-        <h3>Menu</h3>
-    </div>
-    <div class="sidebar-links">
-        <button class="sidebar-link" onclick="handleTabClick('Category', this)">Category</button>
-        <button class="sidebar-link" onclick="handleTabClick('Accounts', this)">Accounts</button>
-    </div>
-</nav>
+    <nav id="sidebar-menu" class="sidebar">
+        <div class="sidebar-header">
+            <h3>Menu</h3>
+        </div>
+        <div class="sidebar-links">
+            <button class="sidebar-link" onclick="handleTabClick('Category', this)">Category</button>
+            <button class="sidebar-link" onclick="handleTabClick('Accounts', this)">Accounts</button>
+        </div>
+    </nav>
     
     <div class="container">
-    <!-- PAGE 1: HOME -->
-    <div id="home-page" class="page-content">
-        <div class="balance-container">
-            <div class="data-card" style="background-color: #007bff;">
-                <h3>Total Account Balance</h3>
-                <p id="total-balance">0</p>
-                <div id="individual-balances"></div>
+        <!-- PAGE 1: HOME -->
+        <div id="home-page" class="page-content">
+            <div class="balance-container">
+                <div class="data-card" style="background-color: #007bff;">
+                    <h3>Total Account Balance</h3>
+                    <p id="total-balance">0</p>
+                    <div id="individual-balances"></div>
+                </div>
             </div>
-        <div class="chart-filters">
-            <button id="btn-this-month" class="chart-filter-btn active" onclick="handleChartFilterClick('thisMonth')">This Month</button>
-            <button id="btn-all-time" class="chart-filter-btn" onclick="handleChartFilterClick('allTime')">All Time</button>
-            <div class="custom-date-range">
-                <input type="date" id="chart-start-date" onchange="handleChartFilterClick('custom')">
-                <span>to</span>
-                <input type="date" id="chart-end-date" onchange="handleChartFilterClick('custom')">
+            <div class="chart-filters">
+                <button id="btn-this-month" class="chart-filter-btn active" onclick="handleChartFilterClick('thisMonth')">This Month</button>
+                <button id="btn-all-time" class="chart-filter-btn" onclick="handleChartFilterClick('allTime')">All Time</button>
+                <div class="custom-date-range">
+                    <input type="date" id="chart-start-date" onchange="handleChartFilterClick('custom')">
+                    <span>to</span>
+                    <input type="date" id="chart-end-date" onchange="handleChartFilterClick('custom')">
+                </div>
             </div>
-        </div>
-        </div>
             <div class="chart-container">
-            <canvas id="expenseChart"></canvas>
+                <canvas id="expenseChart"></canvas>
+            </div>
         </div>
-    </div>
-    
-    <!-- PAGE FOR CATEGORIES -->
-    <div id="category-page" class="page-content hidden">
-        <h2>Manage Categories</h2>
-        <div id="categories-list"></div>
-        <div class="add-category-form">
-            <input type="text" id="new-category-name" placeholder="New Category Name">
-            <button onclick="addCategory()">Add Category</button>
-        </div>
-    </div>
-
-    <!-- PAGE FOR ACCOUNTS -->
-    <div id="accounts-page" class="page-content hidden">
-        <h2>Manage Accounts</h2>
-        <div id="accounts-list"></div>
-        <div class="add-account-form">
-            <input type="text" id="new-account-name" placeholder="New Account Name">
-            <button onclick="addAccount()">Add Account</button>
-        </div>
-    </div>
-
-    <!-- PAGE FOR TRANSACTIONS -->
-    <div id="transaction-page" class="page-content hidden">
-        <h2>Transactions</h2>
-        <!-- NAYA CODE (ISE PASTE KAREIN) -->
-<div class="filters">
-    <!-- Search Bar -->
-    <input type="search" id="search-input" placeholder="Search in description..." class="search-bar">
-    
-    <!-- Filter Dropdowns -->
-    <select id="filter-category"></select>
-    <select id="filter-account"></select>
-
-    <!-- Date Filters -->
-    <input type="date" id="start-date" title="Start Date">
-    <input type="date" id="end-date" title="End Date">
-    
-    <!-- Apply Button -->
-    <button onclick="fetchData()">APPLY FILTERS</button>
-</div>
-        <div id="data-container"></div>
-        <div id="load-more-container" style="text-align: center; margin-top: 20px;">
-            <button id="load-more-btn" onclick="loadMore()">Load More</button>
-        </div>
-    </div>
         
+        <!-- PAGE FOR CATEGORIES -->
+        <div id="category-page" class="page-content hidden">
+            <h2>Manage Categories</h2>
+            <div id="categories-list"></div>
+            <div class="add-category-form">
+                <input type="text" id="new-category-name" placeholder="New Category Name">
+                <button onclick="addCategory()">Add Category</button>
+            </div>
+        </div>
+
+        <!-- PAGE FOR ACCOUNTS -->
+        <div id="accounts-page" class="page-content hidden">
+            <h2>Manage Accounts</h2>
+            <div id="accounts-list"></div>
+            <div class="add-account-form">
+                <input type="text" id="new-account-name" placeholder="New Account Name">
+                <button onclick="addAccount()">Add Account</button>
+            </div>
+        </div>
+
+        <!-- PAGE FOR TRANSACTIONS -->
+        <div id="transaction-page" class="page-content hidden">
+            <h2>Transactions</h2>
+            <div class="filters">
+                <input type="search" id="search-input" placeholder="Search in description..." class="search-bar">
+                <select id="filter-category"></select>
+                <select id="filter-account"></select>
+                <input type="date" id="start-date" title="Start Date">
+                <input type="date" id="end-date" title="End Date">
+                <button onclick="fetchData()">APPLY FILTERS</button>
+            </div>
+            <div id="data-container"></div>
+            <div id="load-more-container" style="text-align: center; margin-top: 20px;">
+                <button id="load-more-btn" onclick="loadMore()">Load More</button>
+            </div>
+        </div>
+            
+        <!-- PAGE FOR TASKS -->
         <div id="tasks-page" class="page-content hidden">
             <h2>Manage Tasks</h2>
-            
-            <!-- Task Add Karne ka Form -->
             <div class="add-task-form">
                 <input type="text" id="new-task-title" placeholder="Task Title">
                 <input type="text" id="new-task-desc" placeholder="Description (optional)">
                 <input type="date" id="new-task-due-date" title="Due Date">
                 <button onclick="addTask()">Add Task</button>
             </div>
-
-            <!-- Tasks ki List Dikhane ke liye Container -->
             <div id="tasks-list-container"></div>
-        </div>
             <div class="completed-tasks-section">
-        <div id="completed-tasks-header" class="completed-tasks-header">
-            <h4>Completed Tasks (<span id="completed-tasks-count">0</span>)</h4>
-            <svg id="collapse-icon" class="collapse-icon" viewBox="0 0 320 512"><path d="M137.4 374.6c12.5 12.5 32.8 12.5 45.3 0l128-128c9.2-9.2 11.9-22.9 6.9-34.9s-16.6-19.8-29.6-19.8L32 192c-12.9 0-24.6 7.8-29.6 19.8s-2.2 25.7 6.9 34.9l128 128z"/></svg>
-        </div>
-        <div id="completed-tasks-list" class="completed-tasks-list"></div>
-    </div>
-</div>
-        
-<!-- Custom Message Box -->
-<div id="messageBox" class="message-box">
-    <p id="messageText"></p>
-    <button onclick="hideMessage()">OK</button>
-</div>
-
-<!-- Custom Confirmation Box -->
-<div id="confirmationBox" class="message-box">
-    <p id="confirmationText"></p>
-    <div class="confirm-buttons">
-        <button id="confirm-no-btn">Cancel</button>
-        <button id="confirm-yes-btn">Yes, Delete</button>
-    </div>
-</div>
-    
-<!-- App ka Tab Bar -->
-<div class="tab-bar">
-    <button class="tab-link active" onclick="handleTabClick('Home', this)">Home</button>
-    <button class="tab-link" onclick="handleTabClick('Transaction', this)">Transaction</button>
-    <button class="tab-link" onclick="handleTabClick('Tasks', this)">Tasks</button>
-</div>
-
-<!-- Yeh ab main app ki script file hai -->
-<script src="script.js"></script>
-<!-- Floating Action Button (FAB) -->
-<button id="add-transaction-fab" class="fab">+</button>
-
-<!-- Transaction Modal Overlay -->
-<div id="transaction-modal-overlay" class="modal-overlay">
-    <!-- Modal Content -->
-    <div id="transaction-modal-content" class="modal-content">
-        <div class="modal-header">
-            <h3>Add Transaction</h3>
-            <button id="modal-close-btn" class="close-btn">&times;</button>
-        </div>
-        
-        <div class="modal-body">
-            <!-- Type Selector (Income/Expense) -->
-            <div id="modal-type-selector" class="type-selector">
-                <button class="type-btn active" data-type="EXPENSE">Expense</button>
-                <button class="type-btn" data-type="INCOME">Income</button>
+                <div id="completed-tasks-header" class="completed-tasks-header">
+                    <h4>Completed Tasks (<span id="completed-tasks-count">0</span>)</h4>
+                    <svg id="collapse-icon" class="collapse-icon" viewBox="0 0 320 512"><path d="M137.4 374.6c12.5 12.5 32.8 12.5 45.3 0l128-128c9.2-9.2 11.9-22.9 6.9-34.9s-16.6-19.8-29.6-19.8L32 192c-12.9 0-24.6 7.8-29.6 19.8s-2.2 25.7 6.9 34.9l128 128z"/></svg>
+                </div>
+                <div id="completed-tasks-list" class="completed-tasks-list"></div>
             </div>
+        </div>
+    </div> <!-- .container closing div -->
             
-            <!-- Date Input -->
-            <input type="date" id="modal-date">
-            
-            <!-- Accounts (Payment Modes) Selector -->
-            <p class="selector-label">From Account:</p>
-            <div id="modal-accounts-selector" class="horizontal-selector"></div>
+    <!-- Custom Message Box -->
+    <div id="messageBox" class="message-box">
+        <p id="messageText"></p>
+        <button onclick="hideMessage()">OK</button>
+    </div>
 
-            <!-- Amount Input -->
-            <input type="number" id="modal-amount" placeholder="0.00">
-            
-            <!-- Description Input -->
-            <input type="text" id="modal-description" placeholder="Add a note...">
-
-            <!-- Category Selector -->
-            <p class="selector-label">Category:</p>
-            <div id="modal-categories-selector" class="horizontal-selector"></div>
-            
-            <!-- Save Button -->
-            <button id="modal-save-btn" class="save-transaction-btn">SAVE TRANSACTION</button>
+    <!-- Custom Confirmation Box -->
+    <div id="confirmationBox" class="message-box">
+        <p id="confirmationText"></p>
+        <div class="confirm-buttons">
+            <button id="confirm-no-btn">Cancel</button>
+            <button id="confirm-yes-btn">Yes, Delete</button>
         </div>
     </div>
-</div>
+        
+    <!-- App ka Tab Bar -->
+    <div class="tab-bar">
+        <button class="tab-link active" onclick="handleTabClick('Home', this)">Home</button>
+        <button class="tab-link" onclick="handleTabClick('Transaction', this)">Transaction</button>
+        <button class="tab-link" onclick="handleTabClick('Tasks', this)">Tasks</button>
+    </div>
+
+    <!-- Floating Action Button (FAB) -->
+    <button id="add-transaction-fab" class="fab">+</button>
+
+    <!-- Transaction Modal Overlay -->
+    <div id="transaction-modal-overlay" class="modal-overlay">
+        <div id="transaction-modal-content" class="modal-content">
+            <div class="modal-header">
+                <h3>Add Transaction</h3>
+                <button id="modal-close-btn" class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="modal-type-selector" class="type-selector">
+                    <button class="type-btn active" data-type="EXPENSE">Expense</button>
+                    <button class="type-btn" data-type="INCOME">Income</button>
+                </div>
+                <input type="date" id="modal-date">
+                <p class="selector-label">From Account:</p>
+                <div id="modal-accounts-selector" class="horizontal-selector"></div>
+                <input type="number" id="modal-amount" placeholder="0.00">
+                <input type="text" id="modal-description" placeholder="Add a note...">
+                <p class="selector-label">Category:</p>
+                <div id="modal-categories-selector" class="horizontal-selector"></div>
+                <button id="modal-save-btn" class="save-transaction-btn">SAVE TRANSACTION</button>
+            </div>
+        </div>
+    </div>
+        
+    <script src="script.js"></script>
     
 </body>
 </html>
