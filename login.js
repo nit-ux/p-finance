@@ -2,14 +2,16 @@ const SUPABASE_URL = 'https://wfwjcbbylwmozqcddigc.supabase.co/'; // Yahan apna 
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indmd2pjYmJ5bHdtb3pxY2RkaWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIxMzk1MTQsImV4cCI6MjA3NzcxNTUxNH0.5hNH22mvpECQzfEgQsQRIbuWNm4XenUszgd21oOEif8'; // Yahan apni Supabase Anon Key daalein
 // ====== SUPABASE SETUP for LOGIN PAGE ======
 
-const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// CORRECTED INITIALIZATION: Yahan galti theek kar di gayi hai
+const { createClient } = supabase;
+const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 let isLoginMode = true;
 
 // Check karein ki user pehle se logged-in hai ya nahi
-supabase.auth.onAuthStateChange((event, session) => {
+supabaseClient.auth.onAuthStateChange((event, session) => {
     if (session && session.user) {
-        // Agar user logged-in hai, to use seedhe main app par bhej do
+        // Agar user logged-in hai, to use seedhe main app (index.html) par bhej do
         window.location.href = 'index.html';
     }
 });
@@ -32,12 +34,11 @@ async function handleAuthAction() {
 
     try {
         const { error } = isLoginMode
-            ? await supabase.auth.signInWithPassword({ email, password })
-            : await supabase.auth.signUp({ email, password });
+            ? await supabaseClient.auth.signInWithPassword({ email, password })
+            : await supabaseClient.auth.signUp({ email, password });
 
         if (error) throw error;
 
-        // Login successful hone par onAuthStateChange apne aap redirect kar dega.
         if (!isLoginMode) {
             alert("Signup successful! Please check your email to verify your account before logging in.");
         }
