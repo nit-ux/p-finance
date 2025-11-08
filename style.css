@@ -590,27 +590,32 @@ h1, h2 { color: #0056b3; text-align: center; }
 }
 /* --- App Header --- */
 .app-header {
-    position: sticky; /* Page ke saath scroll hoga lekin upar chipak jayega */
+    position: sticky;
     top: 0;
     left: 0;
     width: 100%;
     background-color: #fff;
     padding: 10px 15px;
     display: flex;
-    justify-content: space-between; /* Title ko left aur icon ko right mein rakhega */
+    justify-content: space-between; /* Yeh cheezon ko kinaro par rakhega */
     align-items: center;
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     z-index: 900;
     box-sizing: border-box;
 }
 
+/* Header ka Title (Center mein) */
 .app-header h2 {
     margin: 0;
     font-size: 1.2em;
     color: #0056b3;
+    /* Center karne ke liye absolute positioning ka istemal */
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
 }
 
-/* Logout Icon Button */
+/* Logout Icon Button (Right mein) */
 .logout-icon-btn {
     background: none;
     border: none;
@@ -620,14 +625,13 @@ h1, h2 { color: #0056b3; text-align: center; }
     display: flex;
     align-items: center;
     justify-content: center;
+    z-index: 1; /* Title ke upar rahe */
 }
-
 .logout-icon-btn svg {
     width: 24px;
     height: 24px;
-    fill: #555; /* Icon ka color */
+    fill: #555;
 }
-
 .logout-icon-btn:hover {
     background-color: #f0f0f0;
 }
@@ -638,11 +642,13 @@ h1, h2 { color: #0056b3; text-align: center; }
     align-items: center;
     gap: 15px; /* Icon aur title ke beech space */
 }
+/* Menu Button (Left mein) */
 .menu-btn {
     background: none;
     border: none;
     cursor: pointer;
     padding: 5px;
+    z-index: 1; /* Title ke upar rahe */
 }
 .menu-btn svg {
     width: 22px;
