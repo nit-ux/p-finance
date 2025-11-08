@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login - Advanced Cashbook</title>
+    <!-- Hum same style.css file istemal karenge -->
+    <link rel="stylesheet" href="style.css">
+    <!-- Supabase Library Link -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <!-- Login/Signup Form jo poori screen par dikhega -->
+    <div id="auth-overlay" class="auth-overlay">
+        <div class="auth-container">
+            <h2 id="auth-title">Login</h2>
+            <div id="auth-error" class="auth-error"></div>
+            <input type="email" id="auth-email" placeholder="Email">
+            <input type="password" id="auth-password" placeholder="Password">
+            <button id="auth-action-btn" onclick="handleAuthAction()">Login</button>
+            <p id="auth-toggle-text">Don't have an account? <a href="#" onclick="toggleAuthMode()">Sign Up</a></p>
+        </div>
+    </div>
+    
+    <!-- Ek alag JS file sirf login ke liye -->
+    <script src="login.js"></script>
+</body>
+</html>
