@@ -127,7 +127,7 @@ async function removeCategory(name) {
 
         // Step 2: Agar transactions hain, to user se confirm karo
         if (count > 0) {
-            confirmed = confirm(
+            confirmed = await showConfirmation(
                 `"${name}" category is used in ${count} transaction(s).\n\nAre you sure you want to delete this category AND all its related transactions permanently? This action cannot be undone.`
             );
         }
@@ -274,7 +274,9 @@ async function removeAccount(name) {
 
         // Step 2: Agar transactions hain, to user se confirm karo
         if (count > 0) {
-            confirmed = confirm(
+            if (count > 0) {
+            // YEH LINE BADLI GAYI HAI
+            confirmed = await showConfirmation(
                 `"${name}" account is used in ${count} transaction(s).\n\nAre you sure you want to delete this account AND all its related transactions permanently? This action cannot be undone.`
             );
         }
