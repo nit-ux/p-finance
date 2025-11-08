@@ -409,10 +409,6 @@ async function renderExpenseChart(transactions) {
     });
 }
 
-// ... renderExpenseChart() function ke baad ...
-
-// YEH SAARE NAYE FUNCTIONS ADD KAREIN
-
 // --- TASK MANAGEMENT LOGIC ---
 
 // Database se saare tasks fetch karke screen par dikhayega
@@ -426,46 +422,72 @@ async function renderTasks() {
             .from('tasks')
             .select('*')
             .eq('user_id', userId)
-            .order('created_at', { ascending: false }); // Naye tasks upar
+            .order('created_at', { ascending: false });
 
         if (error) throw error;
 
-        const container = document.getElementById('tasks-list-container');
-        container.innerHTML = ''; // Purani list saaf karo
+        // Tasks ko do hisson mein baanto: Incomplete aur Completed
+        const incompleteTasks = tasks.filter(task => !task.is_completed);
+        const completedTasks = tasks.filter(task => task.is_completed);
 
-        if (tasks.length === 0) {
-            container.innerHTML = '<p style="text-align:center;">No tasks found. Add one above!</p>';
-            return;
+        const incompleteContainer = document.getElementById('tasks-list-container');
+        const completedContainer = document.getElementById('completed-tasks-list');
+        
+        // Dono containers ko saaf karo
+        incompleteContainer.innerHTML = '';
+        completedContainer.innerHTML = '';
+
+        // Completed tasks ka count update karo
+        document.getElementById('completed-tasks-count').innerText = completedTasks.length;
+
+        // Incomplete tasks ko render karo
+        if (incompleteTasks.length === 0) {
+            incompleteContainer.innerHTML = '<p style="text-align:center;">No active tasks. Add one above!</p>';
+        } else {
+            incompleteTasks.forEach(task => {
+                const taskEl = createTaskElement(task); // Helper function ka istemal
+                incompleteContainer.appendChild(taskEl);
+            });
         }
 
-        tasks.forEach(task => {
-            const taskEl = document.createElement('div');
-            taskEl.className = `task-item ${task.is_completed ? 'completed' : ''}`;
-            
-            const dueDate = task.due_date ? new Date(task.due_date).toLocaleDateString() : 'No due date';
+        // Completed tasks ko render karo
+        if (completedTasks.length > 0) {
+             completedTasks.forEach(task => {
+                const taskEl = createTaskElement(task); // Helper function ka istemal
+                completedContainer.appendChild(taskEl);
+            });
+        }
 
-            taskEl.innerHTML = `
-                <div class="checkbox-container">
-                    <input type="checkbox" ${task.is_completed ? 'checked' : ''} onchange="toggleTaskStatus(${task.id}, ${task.is_completed})">
-                </div>
-                <div class="task-details">
-                    <h4>${task.title}</h4>
-                    <p>${task.description || ''}</p>
-                    <div class="due-date">${dueDate}</div>
-                </div>
-                <div class="task-actions">
-                    <button class="delete-btn" onclick="deleteTask(${task.id})" title="Delete Task">
-                        <svg viewBox="0 0 448 512"><path d="M135.2 17.7L128 32H32C14.3 32 0 46.3 0 64S14.3 96 32 96H416c17.7 0 32-14.3 32-32s-14.3-32-32-32H320l-7.2-14.3C307.4 6.8 296.3 0 284.2 0H163.8c-12.1 0-23.2 6.8-28.6 17.7zM416 128H32L53.2 467c1.6 25.3 22.6 45 47.9 45H346.9c25.3 0 46.3-19.7 47.9-45L416 128z"/></svg>
-                    </button>
-                </div>
-            `;
-            container.appendChild(taskEl);
-        });
     } catch (error) {
         showMessage(`Error fetching tasks: ${error.message}`);
     } finally {
         hideSpinner();
     }
+}
+
+// EK NAYA HELPER FUNCTION JO TASK ELEMENT BANATA HAI (DRY PRINCIPLE)
+function createTaskElement(task) {
+    const taskEl = document.createElement('div');
+    taskEl.className = `task-item ${task.is_completed ? 'completed' : ''}`;
+    
+    const dueDate = task.due_date ? new Date(task.due_date).toLocaleDateString() : 'No due date';
+
+    taskEl.innerHTML = `
+        <div class="checkbox-container">
+            <input type="checkbox" ${task.is_completed ? 'checked' : ''} onchange="toggleTaskStatus(${task.id}, ${task.is_completed})">
+        </div>
+        <div class="task-details">
+            <h4>${task.title}</h4>
+            <p>${task.description || ''}</p>
+            <div class="due-date">${dueDate}</div>
+        </div>
+        <div class="task-actions">
+            <button class="delete-btn" onclick="deleteTask(${task.id})" title="Delete Task">
+                <svg viewBox="0 0 448 512"><path d="M135.2 17.7L128 32H32C14.3 32 0 46.3 0 64S14.3 96 32 96H416c17.7 0 32-14.3 32-32s-14.3-32-32-32H320l-7.2-14.3C307.4 6.8 296.3 0 284.2 0H163.8c-12.1 0-23.2 6.8-28.6 17.7zM416 128H32L53.2 467c1.6 25.3 22.6 45 47.9 45H346.9c25.3 0 46.3-19.7 47.9-45L416 128z"/></svg>
+            </button>
+        </div>
+    `;
+    return taskEl;
 }
 
 // Naya task add karega
@@ -711,6 +733,7 @@ function initializeApp() {
     // --- SIDEBAR EVENT LISTENERS ---
     document.getElementById('menu-btn').onclick = openSidebar;
     document.getElementById('sidebar-overlay').onclick = closeSidebar;
+    document.getElementById('completed-tasks-header').onclick = toggleCompletedTasks;
 
     // --- MODAL EVENT LISTENERS ---
     document.getElementById('add-transaction-fab').onclick = showModal;
