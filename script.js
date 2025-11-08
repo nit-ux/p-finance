@@ -47,6 +47,30 @@ function showMessage(message) {
 }
 function hideMessage() { document.getElementById('messageBox').style.display = 'none'; }
 
+function showConfirmation(message) {
+    return new Promise(resolve => {
+        const confirmBox = document.getElementById('confirmationBox');
+        const confirmText = document.getElementById('confirmationText');
+        const yesBtn = document.getElementById('confirm-yes-btn');
+        const noBtn = document.getElementById('confirm-no-btn');
+
+        confirmText.innerText = message;
+        confirmBox.style.display = 'block';
+
+        // Yes button par click karne se Promise resolve(true) hoga
+        yesBtn.onclick = () => {
+            confirmBox.style.display = 'none';
+            resolve(true);
+        };
+
+        // No button par click karne se Promise resolve(false) hoga
+        noBtn.onclick = () => {
+            confirmBox.style.display = 'none';
+            resolve(false);
+        };
+    });
+}
+
 function handleTabClick(tabName, element) {
     resetAllCategoryStates();
     resetAllAccountStates(); // Reset account states too
