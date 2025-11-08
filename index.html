@@ -62,31 +62,26 @@
         
         <!-- PAGE FOR CATEGORIES -->
         <div id="category-page" class="page-content hidden">
-        <h2>Manage Categories</h2>
-
-<!-- Naya Tabbed Interface -->
-<div class="category-tabs">
-    <button class="cat-tab-btn active" onclick="handleCategoryTabClick('EXPENSE', this)">Expenses</button>
-    <button class="cat-tab-btn" onclick="handleCategoryTabClick('INCOME', this)">Income</button>
-</div>
-
-<!-- Expense Categories ke liye Content -->
-<div id="expense-categories-content" class="category-content active">
-    <div id="expense-categories-list"></div>
-    <div class="add-category-form">
-        <input type="text" id="new-expense-category-name" placeholder="New Expense Category">
-        <button onclick="addCategory('EXPENSE')">Add Expense Category</button>
-    </div>
-</div>
-
-<!-- Income Categories ke liye Content -->
-<div id="income-categories-content" class="category-content">
-    <div id="income-categories-list"></div>
-    <div class="add-category-form">
-        <input type="text" id="new-income-category-name" placeholder="New Income Category">
-        <button onclick="addCategory('INCOME')">Add Income Category</button>
-    </div>
-</div>
+            <h2>Manage Categories</h2>
+            <div class="category-tabs">
+                <button class="cat-tab-btn active" onclick="handleCategoryTabClick('EXPENSE', this)">Expenses</button>
+                <button class="cat-tab-btn" onclick="handleCategoryTabClick('INCOME', this)">Income</button>
+            </div>
+            <div id="expense-categories-content" class="category-content active">
+                <div id="expense-categories-list"></div>
+                <div class="add-category-form">
+                    <input type="text" id="new-expense-category-name" placeholder="New Expense Category">
+                    <button onclick="addCategory('EXPENSE')">Add Expense Category</button>
+                </div>
+            </div>
+            <div id="income-categories-content" class="category-content">
+                <div id="income-categories-list"></div>
+                <div class="add-category-form">
+                    <input type="text" id="new-income-category-name" placeholder="New Income Category">
+                    <button onclick="addCategory('INCOME')">Add Income Category</button>
+                </div>
+            </div>
+        </div>
 
         <!-- PAGE FOR ACCOUNTS -->
         <div id="accounts-page" class="page-content hidden">
@@ -134,6 +129,26 @@
                 <div id="completed-tasks-list" class="completed-tasks-list"></div>
             </div>
         </div>
+
+        <!-- PAGE FOR POMODORO -->
+        <div id="pomodoro-page" class="page-content hidden">
+            <h2>Pomodoro Timer</h2>
+            <div id="pomodoro-container" class="pomodoro-container">
+                <div class="pomodoro-task-selector">
+                    <label for="pomodoro-task-select">Select a task to work on:</label>
+                    <select id="pomodoro-task-select">
+                        <option value="">-- Please choose a task --</option>
+                    </select>
+                </div>
+                <div id="pomodoro-timer-display" class="timer-display">25:00</div>
+                <div class="pomodoro-controls">
+                    <button id="pomodoro-start-btn">Start</button>
+                    <button id="pomodoro-pause-btn" class="hidden">Pause</button>
+                    <button id="pomodoro-reset-btn">Reset</button>
+                </div>
+            </div>
+        </div>
+
     </div> <!-- .container closing div -->
             
     <!-- Custom Message Box -->
@@ -156,6 +171,7 @@
         <button class="tab-link active" onclick="handleTabClick('Home', this)">Home</button>
         <button class="tab-link" onclick="handleTabClick('Transaction', this)">Transaction</button>
         <button class="tab-link" onclick="handleTabClick('Tasks', this)">Tasks</button>
+        <button class="tab-link" onclick="handleTabClick('Pomodoro', this)">Pomodoro</button>
     </div>
 
     <!-- Floating Action Button (FAB) -->
@@ -186,6 +202,7 @@
     </div>
         
     <script src="script.js"></script>
+    <audio id="alarm-sound" src="https://www.soundjay.com/buttons/sounds/button-1.mp3" preload="auto"></audio>
     
 </body>
 </html>
