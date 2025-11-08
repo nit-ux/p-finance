@@ -57,13 +57,10 @@ function showConfirmation(message) {
         confirmText.innerText = message;
         confirmBox.style.display = 'block';
 
-        // Yes button par click karne se Promise resolve(true) hoga
         yesBtn.onclick = () => {
             confirmBox.style.display = 'none';
             resolve(true);
         };
-
-        // No button par click karne se Promise resolve(false) hoga
         noBtn.onclick = () => {
             confirmBox.style.display = 'none';
             resolve(false);
@@ -73,7 +70,7 @@ function showConfirmation(message) {
 
 function handleTabClick(tabName, element) {
     resetAllCategoryStates();
-    resetAllAccountStates(); // Reset account states too
+    resetAllAccountStates();
     document.querySelectorAll('.tab-link').forEach(tab => tab.classList.remove('active'));
     element.classList.add('active');
     document.querySelectorAll('.page-content').forEach(page => page.classList.add('hidden'));
@@ -115,42 +112,27 @@ async function addCategory() {
 
 async function removeCategory(name) {
     try {
-        // Step 1: Check karein ki is category mein kitne transactions hain
         const { count, error: checkError } = await supabaseClient
             .from('transactions')
             .select('*', { count: 'exact', head: true })
             .eq('category', name);
-
         if (checkError) throw checkError;
 
-        let confirmed = true; // Maan ke chalo ki delete karna hai
-
-        // Step 2: Agar transactions hain, to user se confirm karo
+        let confirmed = true;
         if (count > 0) {
             confirmed = await showConfirmation(
                 `"${name}" category is used in ${count} transaction(s).\n\nAre you sure you want to delete this category AND all its related transactions permanently? This action cannot be undone.`
             );
         }
 
-        // Step 3: Agar user ne confirm kiya hai, tab hi aage badho
         if (confirmed) {
-            // Pehle saare related transactions delete karo
             if (count > 0) {
-                const { error: txError } = await supabaseClient
-                    .from('transactions')
-                    .delete()
-                    .eq('category', name);
+                const { error: txError } = await supabaseClient.from('transactions').delete().eq('category', name);
                 if (txError) throw txError;
             }
-
-            // Fir category ko delete karo
-            const { error: catError } = await supabaseClient
-                .from('categories')
-                .delete()
-                .eq('name', name);
+            const { error: catError } = await supabaseClient.from('categories').delete().eq('name', name);
             if (catError) throw catError;
-
-            // UI refresh karo
+            
             renderCategoriesList();
             populateCategoriesDropdown();
         }
@@ -165,40 +147,20 @@ async function updateCategory(saveButton) {
     const input = item.querySelector('.edit-category-input');
     const newName = input.value.trim();
 
-    if (!newName) {
-        showMessage('Category name cannot be empty.');
-        return;
-    }
-    if (newName === oldName) {
-        // Agar naam nahi badla to kuch mat karo, bas UI reset kar do
-        renderCategoriesList();
-        return;
-    }
+    if (!newName) { showMessage('Category name cannot be empty.'); return; }
+    if (newName === oldName) { renderCategoriesList(); return; }
 
     try {
-        // Step 1: Pehle 'transactions' table ko update karo
-        const { error: txError } = await supabaseClient
-            .from('transactions')
-            .update({ category: newName }) // 'category' column ko naye naam se update karo
-            .eq('category', oldName);      // Jahaan-jahaan purana naam hai
+        const { error: txError } = await supabaseClient.from('transactions').update({ category: newName }).eq('category', oldName);
+        if (txError) throw txError;
         
-        if (txError) throw txError; // Agar koi error aaye to ruk jao
+        const { error: catError } = await supabaseClient.from('categories').update({ name: newName }).eq('name', oldName);
+        if (catError) throw catError;
 
-        // Step 2: Ab 'categories' table ko update karo
-        const { error: catError } = await supabaseClient
-            .from('categories')
-            .update({ name: newName })
-            .eq('name', oldName);
-
-        if (catError) throw catError; // Agar koi error aaye to ruk jao
-
-        // Step 3: UI ko refresh karo
         renderCategoriesList();
         populateCategoriesDropdown();
-
     } catch (error) {
         showMessage(`Error updating category: ${error.message}`);
-        // Error hone par bhi UI ko reset kar do taaki sab theek dikhe
         renderCategoriesList(); 
     }
 }
@@ -262,44 +224,24 @@ async function addAccount() {
 
 async function removeAccount(name) {
     try {
-        // Step 1: Check karein ki is account mein kitne transactions hain
-        const { count, error: checkError } = await supabaseClient
-            .from('transactions')
-            .select('*', { count: 'exact', head: true })
-            .eq('payment_mode', name);
-
+        const { count, error: checkError } = await supabaseClient.from('transactions').select('*', { count: 'exact', head: true }).eq('payment_mode', name);
         if (checkError) throw checkError;
 
         let confirmed = true;
-
-        // Step 2: Agar transactions hain, to user se confirm karo
         if (count > 0) {
-            if (count > 0) {
-            // YEH LINE BADLI GAYI HAI
             confirmed = await showConfirmation(
                 `"${name}" account is used in ${count} transaction(s).\n\nAre you sure you want to delete this account AND all its related transactions permanently? This action cannot be undone.`
             );
         }
 
-        // Step 3: Agar user ne confirm kiya hai, tab hi aage badho
         if (confirmed) {
-            // Pehle saare related transactions delete karo
             if (count > 0) {
-                const { error: txError } = await supabaseClient
-                    .from('transactions')
-                    .delete()
-                    .eq('payment_mode', name);
+                const { error: txError } = await supabaseClient.from('transactions').delete().eq('payment_mode', name);
                 if (txError) throw txError;
             }
-
-            // Fir account ko delete karo
-            const { error: accError } = await supabaseClient
-                .from('accounts')
-                .delete()
-                .eq('name', name);
+            const { error: accError } = await supabaseClient.from('accounts').delete().eq('name', name);
             if (accError) throw accError;
-
-            // UI refresh karo
+            
             renderAccountsList();
             populatePaymentModesDropdown();
         }
@@ -316,21 +258,14 @@ async function updateAccount(saveButton) {
     if (!newName) { showMessage('Account name cannot be empty.'); return; }
 
     try {
-        const { error: txError } = await supabaseClient
-            .from('transactions')
-            .update({ payment_mode: newName })
-            .eq('payment_mode', oldName);
+        const { error: txError } = await supabaseClient.from('transactions').update({ payment_mode: newName }).eq('payment_mode', oldName);
         if (txError) throw txError;
         
-        const { error: accError } = await supabaseClient
-            .from('accounts')
-            .update({ name: newName })
-            .eq('name', oldName);
+        const { error: accError } = await supabaseClient.from('accounts').update({ name: newName }).eq('name', oldName);
         if (accError) throw accError;
 
         renderAccountsList();
         populatePaymentModesDropdown();
-
     } catch (error) {
         showMessage(`Error updating account: ${error.message}`);
         renderAccountsList();
@@ -415,13 +350,11 @@ async function fetchData() {
         document.getElementById('data-container').innerHTML = '';
         currentlyDisplayedCount = 0;
         displayTransactions();
-
     } catch (error) {
         console.error('Error fetching data:', error);
         showMessage('Error fetching data from Supabase.');
     }
 }
-
 
 async function addData() {
     const date = document.getElementById('add-date').value;
@@ -436,7 +369,6 @@ async function addData() {
         showMessage('Please fill all required fields.'); return;
     }
     
-    // Amount is always stored as a positive number
     amount = Math.abs(amount);
 
     try {
@@ -452,7 +384,6 @@ async function addData() {
         showMessage(`Failed to add data: ${error.message}`);
     }
 }
-
 
 function displayTransactions() {
     const dataContainer = document.getElementById('data-container');
@@ -474,7 +405,6 @@ function displayTransactions() {
         const date = new Date(transaction_date);
         const formattedDate = `${String(date.getDate()).padStart(2, '0')}-${String(date.getMonth() + 1).padStart(2, '0')}-${date.getFullYear()}`;
         
-        // Displaying payment_mode in the card footer
         contentToAdd += `
             <div class="transaction-card ${cardClass}">
                 <div class="card-header">
@@ -497,7 +427,6 @@ function displayTransactions() {
     currentlyDisplayedCount = end;
     loadMoreBtn.style.display = currentlyDisplayedCount < allTransactions.length ? 'inline-block' : 'none';
 }
-
 
 function loadMore() { displayTransactions(); }
 function clearFormFields() { 
