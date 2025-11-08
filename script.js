@@ -1,6 +1,6 @@
 // ====== SUPABASE SETUP for MAIN APP ======
-const SUPABASE_URL = 'YOUR_SUPABASE_URL';
-const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+const SUPABASE_URL = 'https://wfwjcbbylwmozqcddigc.supabase.co/';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indmd2pjYmJ5bHdtb3pxY2RkaWdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIxMzk1MTQsImV4cCI6MjA3NzcxNTUxNH0.5hNH22mvpECQzfEgQsQRIbuWNm4XenUszgd21oOEif8';
 
 const { createClient } = supabase;
 const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -9,8 +9,10 @@ const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 let allTransactions = [];
 let currentlyDisplayedCount = 0;
 const transactionsPerLoad = 10;
-let pressTimer = null;
+let pressTimer = null; // For categories
 let longPressTriggered = false;
+let accountPressTimer = null; // For accounts
+let accountLongPressTriggered = false;
 
 // ====== AUTHENTICATION & SECURITY CHECK ======
 supabaseClient.auth.onAuthStateChange((event, session) => {
@@ -27,7 +29,6 @@ supabaseClient.auth.onAuthStateChange((event, session) => {
         window.location.href = 'login.html';
     }
 })();
-
 
 async function logoutUser() {
     await supabaseClient.auth.signOut();
@@ -48,6 +49,7 @@ function hideMessage() { document.getElementById('messageBox').style.display = '
 
 function handleTabClick(tabName, element) {
     resetAllCategoryStates();
+    resetAllAccountStates(); // Reset account states too
     document.querySelectorAll('.tab-link').forEach(tab => tab.classList.remove('active'));
     element.classList.add('active');
     document.querySelectorAll('.page-content').forEach(page => page.classList.add('hidden'));
@@ -172,6 +174,35 @@ async function removeAccount(name) {
     populatePaymentModesDropdown();
 }
 
+async function updateAccount(saveButton) {
+    const item = saveButton.closest('.account-item');
+    const oldName = item.dataset.accountName;
+    const input = item.querySelector('.edit-account-input');
+    const newName = input.value.trim();
+    if (!newName) { showMessage('Account name cannot be empty.'); return; }
+
+    try {
+        const { error: txError } = await supabaseClient
+            .from('transactions')
+            .update({ payment_mode: newName })
+            .eq('payment_mode', oldName);
+        if (txError) throw txError;
+        
+        const { error: accError } = await supabaseClient
+            .from('accounts')
+            .update({ name: newName })
+            .eq('name', oldName);
+        if (accError) throw accError;
+
+        renderAccountsList();
+        populatePaymentModesDropdown();
+
+    } catch (error) {
+        showMessage(`Error updating account: ${error.message}`);
+        renderAccountsList();
+    }
+}
+
 async function renderAccountsList() {
     const accounts = await getAccounts();
     const listContainer = document.getElementById('accounts-list');
@@ -179,12 +210,22 @@ async function renderAccountsList() {
     accounts.forEach(acc => {
         const item = document.createElement('div');
         item.className = 'account-item';
+        item.dataset.accountName = acc.name;
         item.innerHTML = `
-            <span class="item-content">${acc.name}</span>
+            <div class="item-content">
+                <span class="account-name">${acc.name}</span>
+                <input type="text" class="edit-account-input hidden" value="${acc.name}">
+            </div>
             <div class="item-actions">
-                <button class="remove-btn" onclick="removeAccount('${acc.name}')">Remove</button>
+                <button class="save-btn hidden" onclick="updateAccount(this)">Save</button>
+                <button class="remove-btn hidden" onclick="removeAccount('${acc.name}')">Remove</button>
             </div>
         `;
+        item.addEventListener('mousedown', () => handleAccountPressStart(item));
+        item.addEventListener('mouseup', () => handleAccountPressEnd(item));
+        item.addEventListener('mouseleave', () => cancelAccountPress());
+        item.addEventListener('touchstart', () => handleAccountPressStart(item), { passive: true });
+        item.addEventListener('touchend', () => handleAccountPressEnd(item));
         listContainer.appendChild(item);
     });
 }
@@ -322,15 +363,16 @@ function handlePressStart(item) {
     pressTimer = setTimeout(() => {
         longPressTriggered = true;
         resetAllCategoryStates();
+        resetAllAccountStates();
         item.querySelector('.remove-btn').classList.remove('hidden');
     }, 2000);
 }
-
 function handlePressEnd(item) {
     clearTimeout(pressTimer);
     if (!longPressTriggered) {
         if (item.querySelector('.save-btn').classList.contains('hidden')) {
             resetAllCategoryStates();
+            resetAllAccountStates();
             item.querySelector('.category-name').classList.add('hidden');
             const input = item.querySelector('.edit-category-input');
             input.classList.remove('hidden');
@@ -339,13 +381,44 @@ function handlePressEnd(item) {
         }
     }
 }
-
 function cancelPress() { clearTimeout(pressTimer); }
-
 function resetAllCategoryStates() {
     document.querySelectorAll('.category-item').forEach(item => {
         item.querySelector('.category-name').classList.remove('hidden');
         item.querySelector('.edit-category-input').classList.add('hidden');
+        item.querySelector('.save-btn').classList.add('hidden');
+        item.querySelector('.remove-btn').classList.add('hidden');
+    });
+}
+
+function handleAccountPressStart(item) {
+    accountLongPressTriggered = false;
+    accountPressTimer = setTimeout(() => {
+        accountLongPressTriggered = true;
+        resetAllAccountStates();
+        resetAllCategoryStates();
+        item.querySelector('.remove-btn').classList.remove('hidden');
+    }, 2000);
+}
+function handleAccountPressEnd(item) {
+    clearTimeout(accountPressTimer);
+    if (!accountLongPressTriggered) {
+        if (item.querySelector('.save-btn').classList.contains('hidden')) {
+            resetAllAccountStates();
+            resetAllCategoryStates();
+            item.querySelector('.account-name').classList.add('hidden');
+            const input = item.querySelector('.edit-account-input');
+            input.classList.remove('hidden');
+            input.focus();
+            item.querySelector('.save-btn').classList.remove('hidden');
+        }
+    }
+}
+function cancelAccountPress() { clearTimeout(accountPressTimer); }
+function resetAllAccountStates() {
+    document.querySelectorAll('.account-item').forEach(item => {
+        item.querySelector('.account-name').classList.remove('hidden');
+        item.querySelector('.edit-account-input').classList.add('hidden');
         item.querySelector('.save-btn').classList.add('hidden');
         item.querySelector('.remove-btn').classList.add('hidden');
     });
@@ -359,9 +432,6 @@ function initializeApp() {
     populateCategoriesDropdown();
 }
 
-// ---- CORRECTED LOGOUT BUTTON EVENT LISTENER ----
-// Yeh code script ke aakhir mein hai aur turant chalega.
-// Kyunki script tag body ke end mein hai, isliye logout button hamesha available hoga.
 const logoutButton = document.getElementById('logout-btn');
 if (logoutButton) {
     logoutButton.addEventListener('click', logoutUser);
