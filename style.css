@@ -1,6 +1,7 @@
 body { 
     font-family: 'Arial', sans-serif; 
     padding: 5px;
+    padding-top: 70px; 
     background-color: #f4f4f4; 
     color: #333; 
 }
@@ -586,4 +587,47 @@ h1, h2 { color: #0056b3; text-align: center; }
     font-size: 1.1em;
     font-weight: bold;
     cursor: pointer;
+}
+/* --- App Header --- */
+.app-header {
+    position: sticky; /* Page ke saath scroll hoga lekin upar chipak jayega */
+    top: 0;
+    left: 0;
+    width: 100%;
+    background-color: #fff;
+    padding: 10px 15px;
+    display: flex;
+    justify-content: space-between; /* Title ko left aur icon ko right mein rakhega */
+    align-items: center;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    z-index: 900;
+    box-sizing: border-box;
+}
+
+.app-header h2 {
+    margin: 0;
+    font-size: 1.2em;
+    color: #0056b3;
+}
+
+/* Logout Icon Button */
+.logout-icon-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.logout-icon-btn svg {
+    width: 24px;
+    height: 24px;
+    fill: #555; /* Icon ka color */
+}
+
+.logout-icon-btn:hover {
+    background-color: #f0f0f0;
 }
