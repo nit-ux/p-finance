@@ -101,13 +101,43 @@ async function updateCategory(saveButton) {
     const oldName = item.dataset.categoryName;
     const input = item.querySelector('.edit-category-input');
     const newName = input.value.trim();
-    if (!newName) { showMessage('Category name cannot be empty.'); return; }
 
-    const { error } = await supabaseClient.from('categories').update({ name: newName }).eq('name', oldName);
-    if (error) { showMessage(`Error: ${error.message}`); return; }
+    if (!newName) {
+        showMessage('Category name cannot be empty.');
+        return;
+    }
+    if (newName === oldName) {
+        // Agar naam nahi badla to kuch mat karo, bas UI reset kar do
+        renderCategoriesList();
+        return;
+    }
 
-    renderCategoriesList();
-    populateCategoriesDropdown();
+    try {
+        // Step 1: Pehle 'transactions' table ko update karo
+        const { error: txError } = await supabaseClient
+            .from('transactions')
+            .update({ category: newName }) // 'category' column ko naye naam se update karo
+            .eq('category', oldName);      // Jahaan-jahaan purana naam hai
+        
+        if (txError) throw txError; // Agar koi error aaye to ruk jao
+
+        // Step 2: Ab 'categories' table ko update karo
+        const { error: catError } = await supabaseClient
+            .from('categories')
+            .update({ name: newName })
+            .eq('name', oldName);
+
+        if (catError) throw catError; // Agar koi error aaye to ruk jao
+
+        // Step 3: UI ko refresh karo
+        renderCategoriesList();
+        populateCategoriesDropdown();
+
+    } catch (error) {
+        showMessage(`Error updating category: ${error.message}`);
+        // Error hone par bhi UI ko reset kar do taaki sab theek dikhe
+        renderCategoriesList(); 
+    }
 }
 
 async function renderCategoriesList() {
