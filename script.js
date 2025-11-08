@@ -113,21 +113,53 @@ function handleTabClick(pageName, element) {
 }
 
 // ====== CATEGORY MANAGEMENT ======
-async function getCategories() {
-    const { data, error } = await supabaseClient.from('categories').select('name');
+
+function handleCategoryTabClick(type, element) {
+    // Sabhi buttons aur content se 'active' class hatao
+    document.querySelectorAll('.cat-tab-btn').forEach(btn => btn.classList.remove('active'));
+    document.querySelectorAll('.category-content').forEach(content => content.classList.remove('active'));
+
+    // Click hue button aur uske content par 'active' class lagao
+    element.classList.add('active');
+    if (type === 'EXPENSE') {
+        document.getElementById('expense-categories-content').classList.add('active');
+    } else {
+        document.getElementById('income-categories-content').classList.add('active');
+    }
+}
+
+async function getCategories(type) {
+    let query = supabaseClient.from('categories').select('name');
+    
+    // Agar type bataya gaya hai, to filter karo
+    if (type) {
+        query = query.eq('type', type);
+    }
+
+    const { data, error } = await query;
     if (error) { console.error('Error fetching categories:', error); return []; }
     return data.map(c => c.name);
 }
 
-async function addCategory() {
-    const input = document.getElementById('new-category-name');
+async function addCategory(type) {
+    const inputId = type === 'EXPENSE' ? 'new-expense-category-name' : 'new-income-category-name';
+    const input = document.getElementById(inputId);
     const newName = input.value.trim();
+
     if (!newName) { showMessage('Category name cannot be empty.'); return; }
+    
     const userId = await getCurrentUserId();
     if (!userId) return;
-    const { error } = await supabaseClient.from('categories').insert([{ name: newName, user_id: userId, type: 'expense' }]);
+
+    const { error } = await supabaseClient.from('categories').insert([{ 
+        name: newName, 
+        user_id: userId, 
+        type: type // Yahan type save hoga
+    }]);
+
     if (error) { showMessage(`Error: ${error.message}`); return; }
-    renderCategoriesList();
+    
+    await renderCategoriesList(); // List ko refresh karo
     input.value = '';
 }
 
@@ -166,36 +198,56 @@ async function updateCategory(saveButton) {
     } catch (error) { showMessage(`Error updating category: ${error.message}`); renderCategoriesList(); }
 }
 
-// PURANE renderCategoriesList KO ISSE REPLACE KAREIN
 async function renderCategoriesList() {
-    const categories = await getCategories();
-    const listContainer = document.getElementById('categories-list');
-    listContainer.innerHTML = '';
-    
-    categories.forEach(categoryName => {
-        const item = document.createElement('div');
-        item.className = 'category-item';
-        item.dataset.categoryName = categoryName;
-        item.innerHTML = `
-            <div class="item-content">
-                <span class="category-name">${categoryName}</span>
-                <input type="text" class="edit-category-input hidden" value="${categoryName}">
-            </div>
-            <div class="item-actions">
-                <button class="save-btn hidden" onclick="updateCategory(this)">Save</button>
-                <button class="remove-btn hidden" onclick="removeCategory('${categoryName}')">Remove</button>
-            </div>
-        `;
-        // Event Listeners
-        item.addEventListener('mousedown', () => handlePressStart(item));
-        item.addEventListener('mouseup', () => handlePressEnd()); // Sirf timer clear karega
-        item.addEventListener('mouseleave', () => cancelPress());
-        item.addEventListener('touchstart', () => handlePressStart(item), { passive: true });
-        item.addEventListener('touchend', () => handlePressEnd());
-        item.addEventListener('dblclick', () => handleCategoryDoubleClick(item)); // Naya Double Click Listener
-        
-        listContainer.appendChild(item);
+    // Dono types ki categories ek saath fetch karo
+    const [expenseCategories, incomeCategories] = await Promise.all([
+        getCategories('EXPENSE'),
+        getCategories('INCOME')
+    ]);
+
+    const expenseList = document.getElementById('expense-categories-list');
+    const incomeList = document.getElementById('income-categories-list');
+    expenseList.innerHTML = '';
+    incomeList.innerHTML = '';
+
+    // Expense list render karo
+    expenseCategories.forEach(name => {
+        const item = createCategoryElement(name);
+        expenseList.appendChild(item);
     });
+
+    // Income list render karo
+    incomeCategories.forEach(name => {
+        const item = createCategoryElement(name);
+        incomeList.appendChild(item);
+    });
+
+    // Pehla tab by default active rakho
+    handleCategoryTabClick('EXPENSE', document.querySelector('.cat-tab-btn'));
+}
+
+// EK NAYA HELPER FUNCTION JO CATEGORY ELEMENT BANATA HAI
+function createCategoryElement(name) {
+    const item = document.createElement('div');
+    item.className = 'category-item';
+    item.dataset.categoryName = name;
+    item.innerHTML = `
+        <div class="item-content">
+            <span class="category-name">${name}</span>
+            <input type="text" class="edit-category-input hidden" value="${name}">
+        </div>
+        <div class="item-actions">
+            <button class="save-btn hidden" onclick="updateCategory(this)">Save</button>
+            <button class="remove-btn hidden" onclick="removeCategory('${name}')">Remove</button>
+        </div>
+    `;
+    item.addEventListener('mousedown', () => handlePressStart(item));
+    item.addEventListener('mouseup', () => handlePressEnd());
+    item.addEventListener('mouseleave', () => cancelPress());
+    item.addEventListener('touchstart', () => handlePressStart(item), { passive: true });
+    item.addEventListener('touchend', () => handlePressEnd());
+    item.addEventListener('dblclick', () => handleCategoryDoubleClick(item));
+    return item;
 }
 
 // ====== ACCOUNT MANAGEMENT ======
@@ -384,8 +436,8 @@ async function populateAccountsInModal() {
     });
 }
 
-async function populateCategoriesInModal() {
-    const categories = await getCategories();
+async function populateCategoriesInModal(type) {
+    const categories = await getCategories(type); // Type ke hisab se fetch karo
     const container = document.getElementById('modal-categories-selector');
     container.innerHTML = '';
     categories.forEach(catName => {
@@ -393,6 +445,7 @@ async function populateCategoriesInModal() {
         item.className = 'selector-item';
         item.innerText = catName;
         item.dataset.name = catName;
+
         item.onclick = () => {
             container.querySelectorAll('.selector-item').forEach(el => el.classList.remove('active'));
             item.classList.add('active');
@@ -453,8 +506,15 @@ function showModal() {
     document.getElementById('modal-description').value = '';
     selectedModalAccount = null;
     selectedModalCategory = null;
+    
+    // By default Expense type selected rakho
+    document.querySelector('.type-btn[data-type="EXPENSE"]').classList.add('active');
+    document.querySelector('.type-btn[data-type="INCOME"]').classList.remove('active');
+    selectedModalType = 'EXPENSE';
+
     populateAccountsInModal();
-    populateCategoriesInModal();
+    populateCategoriesInModal('EXPENSE'); // Default mein Expense categories dikhao
+    
     document.getElementById('transaction-modal-overlay').classList.add('active');
 }
 
@@ -917,11 +977,13 @@ function initializeApp() {
     document.getElementById('transaction-modal-overlay').onclick = (event) => {
         if (event.target.id === 'transaction-modal-overlay') hideModal();
     };
-    document.querySelectorAll('.type-btn').forEach(btn => {
-        btn.onclick = () => {
-            document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            selectedModalType = btn.dataset.type;
+document.querySelectorAll('.type-btn').forEach(btn => {
+    btn.onclick = () => {
+        document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        selectedModalType = btn.dataset.type;
+
+        populateCategoriesInModal(selectedModalType);
         };
     });
 
