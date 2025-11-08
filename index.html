@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Advanced Cashbook</title>
     <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
@@ -76,6 +77,17 @@
     </div>
 </div>
 
+<div id="auth-overlay" class="auth-overlay">
+    <div class="auth-container">
+        <h2 id="auth-title">Login</h2>
+        <div id="auth-error" class="auth-error"></div>
+        <input type="email" id="auth-email" placeholder="Email">
+        <input type="password" id="auth-password" placeholder="Password">
+        <button id="auth-action-btn" onclick="handleAuthAction()">Login</button>
+        <p id="auth-toggle-text">Don't have an account? <a href="#" onclick="toggleAuthMode()">Sign Up</a></p>
+    </div>
+</div>
+    
 <div id="messageBox" class="message-box">
     <p id="messageText"></p>
     <button onclick="hideMessage()">OK</button>
