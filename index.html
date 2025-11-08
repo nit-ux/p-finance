@@ -6,6 +6,7 @@
     <title>Advanced Cashbook</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
@@ -22,6 +23,9 @@
                 <p id="total-balance">0</p>
                 <div id="individual-balances"></div>
             </div>
+        </div>
+            <div class="chart-container">
+            <canvas id="expenseChart"></canvas>
         </div>
         <div class="input-form">
             <input type="date" id="add-date" name="date" required="true" />
