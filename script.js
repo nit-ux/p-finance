@@ -208,6 +208,14 @@ async function populateCategoriesDropdown() {
     categories.forEach(name => select.innerHTML += `<option value="${name}">${name}</option>`);
 }
 
+async function populateCategoryFilter() {
+    const categories = await getCategories();
+    const select = document.getElementById('filter-category');
+    // Pehla option "All Categories" hoga
+    select.innerHTML = '<option value="">All Categories</option>';
+    categories.forEach(name => select.innerHTML += `<option value="${name}">${name}</option>`);
+}
+
 // ====== ACCOUNT MANAGEMENT ======
 async function getAccounts() {
     const { data, error } = await supabaseClient.from('accounts').select('name, initial_balance');
@@ -314,44 +322,61 @@ async function populatePaymentModesDropdown() {
     accounts.forEach(acc => select.innerHTML += `<option value="${acc.name}">${acc.name}</option>`);
 }
 
+async function populateAccountFilter() {
+    const accounts = await getAccounts();
+    const select = document.getElementById('filter-account');
+    // Pehla option "All Accounts" hoga
+    select.innerHTML = '<option value="">All Accounts</option>';
+    accounts.forEach(acc => select.innerHTML += `<option value="${acc.name}">${acc.name}</option>`);
+}
+
 // ====== CORE APP LOGIC ======
 async function fetchData() {
-    showSpinner(); // Data fetching shuru hone se pehle spinner dikhayein
+    showSpinner();
     try {
+        // Balance calculation waala hissa same rahega
         const accountsData = await getAccounts();
         const { data: allTxData, error: allTxError } = await supabaseClient.from('transactions').select('amount, payment_mode, type');
         if (allTxError) throw allTxError;
 
         const balances = {};
         accountsData.forEach(acc => { balances[acc.name] = acc.initial_balance || 0; });
-        
         allTxData.forEach(tx => {
             if (balances[tx.payment_mode] !== undefined) {
-                 if (tx.type.toUpperCase() === 'INCOME') {
-                    balances[tx.payment_mode] += Math.abs(tx.amount);
-                } else if (tx.type.toUpperCase() === 'EXPENSE') {
-                    balances[tx.payment_mode] -= Math.abs(tx.amount);
-                }
+                 if (tx.type.toUpperCase() === 'INCOME') balances[tx.payment_mode] += Math.abs(tx.amount);
+                 else if (tx.type.toUpperCase() === 'EXPENSE') balances[tx.payment_mode] -= Math.abs(tx.amount);
             }
         });
         
         const currencyFormat = { style: 'currency', currency: 'INR' };
-        const totalBalanceElement = document.getElementById('total-balance');
-        const individualBalancesContainer = document.getElementById('individual-balances');
         let totalBalance = 0;
+        const individualBalancesContainer = document.getElementById('individual-balances');
         individualBalancesContainer.innerHTML = '';
         Object.keys(balances).sort().forEach(accName => {
             const balance = balances[accName];
             totalBalance += balance;
             individualBalancesContainer.innerHTML += `<div class="balance-item"><span>${accName}:</span><span>${new Intl.NumberFormat('en-IN', currencyFormat).format(balance)}</span></div>`;
         });
-        totalBalanceElement.innerText = new Intl.NumberFormat('en-IN', currencyFormat).format(totalBalance);
+        document.getElementById('total-balance').innerText = new Intl.NumberFormat('en-IN', currencyFormat).format(totalBalance);
 
+        // NAYE FILTERS KI VALUES HASIL KARO
         const startDate = document.getElementById('start-date').value;
         const endDate = document.getElementById('end-date').value;
+        const searchTerm = document.getElementById('search-input').value.trim();
+        const selectedCategory = document.getElementById('filter-category').value;
+        const selectedAccount = document.getElementById('filter-account').value;
+        
+        // QUERY BUILDER
         let query = supabaseClient.from('transactions').select('*').order('transaction_date', { ascending: false });
+
+        // FILTERS KO QUERY MEIN ADD KARO
         if (startDate) query = query.gte('transaction_date', startDate);
         if (endDate) query = query.lte('transaction_date', endDate);
+        if (selectedCategory) query = query.eq('category', selectedCategory);
+        if (selectedAccount) query = query.eq('payment_mode', selectedAccount);
+        if (searchTerm) query = query.ilike('notes', `%${searchTerm}%`); // notes column mein search karega
+
+        // QUERY EXECUTE KARO
         const { data: filteredTx, error: filteredTxError } = await query;
         if (filteredTxError) throw filteredTxError;
 
@@ -359,11 +384,12 @@ async function fetchData() {
         document.getElementById('data-container').innerHTML = '';
         currentlyDisplayedCount = 0;
         displayTransactions();
+
     } catch (error) {
         console.error('Error fetching data:', error);
         showMessage('Error fetching data from Supabase.');
     } finally {
-        hideSpinner(); // Kaam khatam hone par spinner hamesha chhupa dein
+        hideSpinner();
     }
 }
 
@@ -522,6 +548,8 @@ function initializeApp() {
     fetchData(); 
     populatePaymentModesDropdown();
     populateCategoriesDropdown();
+    populateCategoryFilter();
+    populateAccountFilter();
 }
 
 const logoutButton = document.getElementById('logout-btn');
