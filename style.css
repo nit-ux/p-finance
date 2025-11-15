@@ -538,7 +538,8 @@ h1, h2 {
 }
 
 .type-selector {
-    display: flex;
+    display: grid; /* Flex se grid mein badla */
+    grid-template-columns: 1fr 1fr 1fr; /* Teen barabar columns */
     margin-bottom: 15px;
     border: 1px solid #ccc;
     border-radius: 8px;
@@ -1010,3 +1011,51 @@ h1, h2 {
 #pomodoro-start-btn { background-color: #28a745; } /* Green */
 #pomodoro-pause-btn { background-color: #ffc107; } /* Yellow */
 #pomodoro-reset-btn { background-color: #dc3545; } /* Red */
+
+#stopwatch-toggle-btn.running {
+    background-color: #ffc107; /* Yellow for "Stop" */
+    color: #333;
+}
+
+/* NAYA CSS CODE (Aakhir mein paste karein) */
+.task-item .task-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 15px;
+    padding-top: 10px;
+    border-top: 1px solid #f0f0f0;
+}
+
+.task-duration {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9em;
+    color: #007bff;
+    font-weight: bold;
+}
+.task-duration svg {
+    width: 16px;
+    height: 16px;
+    fill: #007bff;
+}
+
+/* NAYA CSS CODE (Aakhir mein paste karein) */
+.global-timer {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #ffc107;
+    color: #333;
+    padding: 5px 15px;
+    border-radius: 20px;
+    font-size: 0.9em;
+    font-weight: bold;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+.global-timer.hidden {
+    display: none;
+}

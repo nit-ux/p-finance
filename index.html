@@ -4,16 +4,25 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Advanced Cashbook</title>
+
+    <div id="global-timer-display" class="global-timer hidden">
+        <span id="global-timer-task-name"></span>
+        <span id="global-timer-time">00:00:00</span>
+    </div>
+    
     <link rel="stylesheet" href="style.css">
+    <!-- Supabase and Chart.js libraries -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
+    <!-- Loading Spinner Overlay -->
     <div id="loading-overlay" class="loading-overlay">
         <div class="spinner"></div>
     </div>  
 
+    <!-- Main App Header -->
     <header class="app-header">
         <button id="menu-btn" class="menu-btn" title="Menu">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M0 96C0 78.3 14.3 64 32 64H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32C14.3 128 0 113.7 0 96zM0 256c0-17.7 14.3-32 32-32H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32c-17.7 0-32-14.3-32-32zM448 416c0 17.7-14.3 32-32 32H32c-17.7 0-32-14.3-32-32s14.3-32 32-32H416c17.7 0 32 14.3 32 32z"/></svg>
@@ -24,8 +33,8 @@
         </button>
     </header>
 
+    <!-- Sidebar Menu & Overlay -->
     <div id="sidebar-overlay" class="overlay"></div>
-
     <nav id="sidebar-menu" class="sidebar">
         <div class="sidebar-header">
             <h3>Menu</h3>
@@ -36,6 +45,7 @@
         </div>
     </nav>
     
+    <!-- Main Content Container -->
     <div class="container">
         <!-- PAGE 1: HOME -->
         <div id="home-page" class="page-content">
@@ -130,34 +140,32 @@
             </div>
         </div>
 
-        <!-- PAGE FOR POMODORO -->
+        <!-- PAGE FOR STOPWATCH (Formerly Pomodoro) -->
         <div id="pomodoro-page" class="page-content hidden">
-            <h2>Pomodoro Timer</h2>
-            <div id="pomodoro-container" class="pomodoro-container">
+            <h2>Stopwatch</h2>
+            <div id="stopwatch-container" class="pomodoro-container">
                 <div class="pomodoro-task-selector">
-                    <label for="pomodoro-task-select">Select a task to work on:</label>
+                    <label for="pomodoro-task-select">Select a task to track time for:</label>
                     <select id="pomodoro-task-select">
-                        <option value="">-- Please choose a task --</option>
+                        <option value="">-- Choose a task --</option>
                     </select>
                 </div>
-                <div id="pomodoro-timer-display" class="timer-display">25:00</div>
+                <div id="stopwatch-timer-display" class="timer-display">00:00:00</div>
                 <div class="pomodoro-controls">
-                    <button id="pomodoro-start-btn">Start</button>
-                    <button id="pomodoro-pause-btn" class="hidden">Pause</button>
-                    <button id="pomodoro-reset-btn">Reset</button>
+                    <button id="stopwatch-toggle-btn" onclick="toggleStopwatch()">Start</button>
+                    <button id="stopwatch-reset-btn" onclick="resetStopwatch()">Reset</button>
                 </div>
             </div>
         </div>
 
     </div> <!-- .container closing div -->
             
-    <!-- Custom Message Box -->
+    <!-- UI Helper Modals -->
     <div id="messageBox" class="message-box">
         <p id="messageText"></p>
         <button onclick="hideMessage()">OK</button>
     </div>
 
-    <!-- Custom Confirmation Box -->
     <div id="confirmationBox" class="message-box">
         <p id="confirmationText"></p>
         <div class="confirm-buttons">
@@ -166,7 +174,7 @@
         </div>
     </div>
         
-    <!-- App ka Tab Bar -->
+    <!-- Bottom Tab Bar -->
     <div class="tab-bar">
         <button class="tab-link active" onclick="handleTabClick('Home', this)">Home</button>
         <button class="tab-link" onclick="handleTabClick('Transaction', this)">Transaction</button>
@@ -174,52 +182,44 @@
         <button class="tab-link" onclick="handleTabClick('Pomodoro', this)">Pomodoro</button>
     </div>
 
-    <!-- Floating Action Button (FAB) -->
+    <!-- Floating Action Button for Transactions -->
     <button id="add-transaction-fab" class="fab">+</button>
 
-    <!-- Transaction Modal Overlay -->
+    <!-- Add Transaction Modal -->
     <div id="transaction-modal-overlay" class="modal-overlay">
         <div id="transaction-modal-content" class="modal-content">
             <div class="modal-header">
-    <h3 id="modal-title">Add Transaction</h3>
-    <button id="modal-close-btn" class="close-btn">&times;</button>
-</div>
-
-<div class="modal-body">
-    <!-- Type Selector (Income/Expense/Transfer) -->
-    <div id="modal-type-selector" class="type-selector">
-        <button class="type-btn active" data-type="EXPENSE">Expense</button>
-        <button class="type-btn" data-type="INCOME">Income</button>
-        <button class="type-btn" data-type="TRANSFER">Transfer</button>
-    </div>
-    
-    <input type="date" id="modal-date">
-    
-    <!-- From Account Selector -->
-    <p class="selector-label">From Account:</p>
-    <div id="modal-accounts-selector" class="horizontal-selector"></div>
-
-    <!-- To Account Selector (Sirf Transfer ke liye) -->
-    <div id="transfer-fields" class="hidden">
-        <p class="selector-label">To Account:</p>
-        <div id="modal-to-accounts-selector" class="horizontal-selector"></div>
-    </div>
-
-    <input type="number" id="modal-amount" placeholder="0.00">
-    <input type="text" id="modal-description" placeholder="Add a note...">
-
-    <!-- Category Selector (Transfer ke liye nahi) -->
-    <div id="category-selection-area">
-        <p class="selector-label">Category:</p>
-        <div id="modal-categories-selector" class="horizontal-selector"></div>
-    </div>
-    
-    <button id="modal-save-btn" class="save-transaction-btn">SAVE TRANSACTION</button>
-</div>
+                <h3 id="modal-title">Add Transaction</h3>
+                <button id="modal-close-btn" class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="modal-type-selector" class="type-selector">
+                    <button class="type-btn active" data-type="EXPENSE">Expense</button>
+                    <button class="type-btn" data-type="INCOME">Income</button>
+                    <button class="type-btn" data-type="TRANSFER">Transfer</button>
+                </div>
+                <input type="date" id="modal-date">
+                <p class="selector-label">From Account:</p>
+                <div id="modal-accounts-selector" class="horizontal-selector"></div>
+                <div id="transfer-fields" class="hidden">
+                    <p class="selector-label">To Account:</p>
+                    <div id="modal-to-accounts-selector" class="horizontal-selector"></div>
+                </div>
+                <input type="number" id="modal-amount" placeholder="0.00">
+                <input type="text" id="modal-description" placeholder="Add a note...">
+                <div id="category-selection-area">
+                    <p class="selector-label">Category:</p>
+                    <div id="modal-categories-selector" class="horizontal-selector"></div>
+                </div>
+                <button id="modal-save-btn" class="save-transaction-btn">SAVE TRANSACTION</button>
+            </div>
         </div>
     </div>
         
+    <!-- Main Script (Module) -->
     <script type="module" src="main.js"></script>
+    
+    <!-- Audio for Timer -->
     <audio id="alarm-sound" src="https://www.soundjay.com/buttons/sounds/button-1.mp3" preload="auto"></audio>
     
 </body>

@@ -1,21 +1,82 @@
-// pomodoro.js
+// pomodoro.js - CORRECTED VERSION WITH EXPORT
 
 import { supabaseClient } from './supabase.js';
 import { showMessage } from './ui.js';
+import { getCurrentUserId } from './auth.js';
 
-let pomodoroInterval = null;
-let currentPomodoroTask = null;
+let stopwatchInterval = null;
+let currentStopwatchTask = null;
 
-export function setCurrentPomodoroTask(task) {
-    currentPomodoroTask = task;
+// Iska kaam sirf UI ko update karna hai
+function updateTimerDisplay(totalSeconds) {
+    if (isNaN(totalSeconds) || totalSeconds < 0) totalSeconds = 0;
+    
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    
+    document.getElementById('stopwatch-timer-display').innerText = 
+        `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 }
-export function getCurrentPomodoroTask() {
-    return currentPomodoroTask;
+
+// YAHAN BADLAV HUA HAI: 'export' keyword add kiya gaya hai
+export function handleStopwatchUpdate(task) {
+    currentStopwatchTask = task;
+    clearInterval(stopwatchInterval); // Hamesha purana interval clear karo
+
+    const toggleBtn = document.getElementById('stopwatch-toggle-btn');
+
+    if (task && task.pomodoro_state === 'running' && task.pomodoro_start_time) {
+        const startTime = new Date(task.pomodoro_start_time).getTime();
+        
+        stopwatchInterval = setInterval(() => {
+            const elapsed = Math.floor((Date.now() - startTime) / 1000);
+            updateTimerDisplay(elapsed);
+        }, 1000);
+
+        toggleBtn.innerText = 'Stop';
+        toggleBtn.classList.add('running');
+    } else {
+        // 'stopped' state
+        updateTimerDisplay(0);
+        toggleBtn.innerText = 'Start';
+        toggleBtn.classList.remove('running');
+    }
 }
 
-export function initializePomodoroPage() {
-    populatePomodoroTaskSelect();
-    resetPomodoroUI();
+// Start aur Stop, dono ko handle karega
+export async function toggleStopwatch() {
+    const taskId = document.getElementById('pomodoro-task-select').value;
+    if (!taskId) { showMessage("Please select a task first."); return; }
+
+    if (currentStopwatchTask && currentStopwatchTask.pomodoro_state === 'running') {
+        // --- STOP THE TIMER & LOG THE TIME ---
+        const startTime = currentStopwatchTask.pomodoro_start_time;
+        const endTime = new Date().toISOString();
+        const userId = await getCurrentUserId();
+
+        await supabaseClient.from('time_logs').insert({ task_id: taskId, user_id: userId, start_time: startTime, end_time: endTime });
+        
+        const { data } = await supabaseClient.from('tasks').update({ pomodoro_state: 'stopped', pomodoro_start_time: null }).eq('id', taskId).select().single();
+        handleStopwatchUpdate(data);
+    } else {
+        // --- START THE TIMER ---
+        const updates = { pomodoro_state: 'running', pomodoro_start_time: new Date().toISOString() };
+        const { data, error } = await supabaseClient.from('tasks').update(updates).eq('id', taskId).select().single();
+        if (error) { showMessage(error.message); return; }
+        handleStopwatchUpdate(data);
+    }
+}
+
+export async function resetStopwatch() {
+    const taskId = document.getElementById('pomodoro-task-select').value;
+    if (!taskId) return;
+
+    if (currentStopwatchTask && currentStopwatchTask.pomodoro_state === 'running') {
+        await toggleStopwatch();
+    } else {
+        handleStopwatchUpdate(null);
+    }
 }
 
 export async function populatePomodoroTaskSelect() {
@@ -28,83 +89,7 @@ export async function populatePomodoroTaskSelect() {
     select.value = currentSelection;
 }
 
-export async function startPomodoro() {
-    const taskId = document.getElementById('pomodoro-task-select').value;
-    if (!taskId) { showMessage("Please select a task."); return; }
-
-    let updates = {};
-    if (currentPomodoroTask && currentPomodoroTask.pomodoro_state === 'paused') {
-        const timeLeft = currentPomodoroTask.pomodoro_time_left_on_pause;
-        updates = { pomodoro_state: 'running', pomodoro_start_time: new Date(Date.now() - ((25 * 60) - timeLeft) * 1000).toISOString() };
-    } else {
-        updates = { pomodoro_state: 'running', pomodoro_start_time: new Date().toISOString(), pomodoro_time_left_on_pause: null };
-    }
-
-    const { error } = await supabaseClient.from('tasks').update(updates).eq('id', taskId);
-    if (error) {
-        console.error("Error starting pomodoro:", error);
-        showMessage(`Error: Could not start timer. ${error.message}`);
-    }
-}
-
-export async function pausePomodoro() {
-    if (!currentPomodoroTask || currentPomodoroTask.pomodoro_state !== 'running') return;
-    const elapsed = (Date.now() - new Date(currentPomodoroTask.pomodoro_start_time).getTime()) / 1000;
-    const timeLeft = Math.round((25 * 60) - elapsed);
-    await supabaseClient.from('tasks').update({ pomodoro_state: 'paused', pomodoro_time_left_on_pause: timeLeft }).eq('id', currentPomodoroTask.id);
-}
-
-export async function resetPomodoro() {
-    const taskId = document.getElementById('pomodoro-task-select').value;
-    if (!taskId) { resetPomodoroUI(); return; }
-    await supabaseClient.from('tasks').update({ pomodoro_state: 'stopped', pomodoro_start_time: null, pomodoro_time_left_on_pause: null }).eq('id', taskId);
-}
-
-export function resetPomodoroUI() {
-    clearInterval(pomodoroInterval);
-    document.getElementById('pomodoro-timer-display').innerText = '25:00';
-    document.getElementById('pomodoro-start-btn').innerText = 'Start';
-    document.getElementById('pomodoro-start-btn').classList.remove('hidden');
-    document.getElementById('pomodoro-pause-btn').classList.add('hidden');
-    document.getElementById('pomodoro-container').classList.remove('break-time');
-}
-
-export function handlePomodoroUpdate(task) {
-    currentPomodoroTask = task;
-    clearInterval(pomodoroInterval);
-
-    switch (task.pomodoro_state) {
-        case 'running':
-            const startTime = new Date(task.pomodoro_start_time).getTime();
-            const endTime = startTime + (25 * 60 * 1000);
-            pomodoroInterval = setInterval(() => {
-                const now = Date.now();
-                const timeLeft = Math.round((endTime - now) / 1000);
-                if (timeLeft <= 0) {
-                    clearInterval(pomodoroInterval);
-                    document.getElementById('alarm-sound').play();
-                    resetPomodoro();
-                    return;
-                }
-                updateTimerDisplay(timeLeft);
-            }, 1000);
-            document.getElementById('pomodoro-start-btn').classList.add('hidden');
-            document.getElementById('pomodoro-pause-btn').classList.remove('hidden');
-            break;
-        case 'paused':
-            updateTimerDisplay(task.pomodoro_time_left_on_pause);
-            document.getElementById('pomodoro-start-btn').innerText = 'Resume';
-            document.getElementById('pomodoro-start-btn').classList.remove('hidden');
-            document.getElementById('pomodoro-pause-btn').classList.add('hidden');
-            break;
-        default:
-            resetPomodoroUI();
-            break;
-    }
-}
-
-function updateTimerDisplay(totalSeconds) {
-    const minutes = Math.floor(totalSeconds / 60);
-    const seconds = totalSeconds % 60;
-    document.getElementById('pomodoro-timer-display').innerText = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+export function initializePomodoroPage() {
+    populatePomodoroTaskSelect();
+    handleStopwatchUpdate(null);
 }
