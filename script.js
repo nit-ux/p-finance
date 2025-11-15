@@ -316,19 +316,22 @@ async function toggleBalanceVisibility(accountName) {
 let selectedModalType = 'EXPENSE';
 let selectedModalAccount = null;
 let selectedModalCategory = null;
-async function populateAccountsInModal() {
+let selectedModalFromAccount = null;
+let selectedModalToAccount = null;
+async function populateAccountsInModal(containerId, onSelect) {
     const accounts = await getAccounts();
-    const container = document.getElementById('modal-accounts-selector');
+    const container = document.getElementById(containerId);
     container.innerHTML = '';
     accounts.forEach(acc => {
         const item = document.createElement('div');
         item.className = 'selector-item';
         item.innerText = acc.name;
         item.dataset.name = acc.name;
+        
         item.onclick = () => {
             container.querySelectorAll('.selector-item').forEach(el => el.classList.remove('active'));
             item.classList.add('active');
-            selectedModalAccount = item.dataset.name;
+            onSelect(item.dataset.name); // Callback function use karo
         };
         container.appendChild(item);
     });
@@ -351,18 +354,32 @@ async function populateCategoriesInModal(type) {
     });
 }
 async function saveTransactionFromModal() {
+    if (selectedModalType === 'TRANSFER') {
+        await saveTransfer();
+    } else {
+        await saveStandardTransaction();
+    }
+}
+// Yeh function Income/Expense save karega (aapka purana logic)
+async function saveStandardTransaction() {
     const date = document.getElementById('modal-date').value;
     const amount = parseFloat(document.getElementById('modal-amount').value);
     const description = document.getElementById('modal-description').value;
     const userId = await getCurrentUserId();
-    if (!userId || !date || !amount || !description || !selectedModalAccount || !selectedModalCategory) {
+
+    if (!userId || !date || !amount || !description || !selectedModalFromAccount || !selectedModalCategory) {
         showMessage('Please fill all fields and select an account/category.');
         return;
     }
+
     showSpinner();
     try {
-        const { error } = await supabaseClient.from('transactions').insert([{ transaction_date: date, type: selectedModalType, category: selectedModalCategory, amount: Math.abs(amount), notes: description, payment_mode: selectedModalAccount, user_id: userId }]);
+        const { error } = await supabaseClient.from('transactions').insert([{ 
+            transaction_date: date, type: selectedModalType, category: selectedModalCategory, 
+            amount: Math.abs(amount), notes: description, payment_mode: selectedModalFromAccount, user_id: userId 
+        }]);
         if (error) throw error;
+        
         hideModal();
         showMessage('Transaction added successfully!');
         await fetchData();
@@ -372,17 +389,63 @@ async function saveTransactionFromModal() {
         hideSpinner();
     }
 }
+// YEH NAYA FUNCTION ADD KAREIN
+async function saveTransfer() {
+    const date = document.getElementById('modal-date').value;
+    const amount = parseFloat(document.getElementById('modal-amount').value);
+    const description = document.getElementById('modal-description').value;
+    const userId = await getCurrentUserId();
+
+    // Validation
+    if (!userId || !date || !amount || !description || !selectedModalFromAccount || !selectedModalToAccount) {
+        showMessage('Please fill all fields and select both accounts.');
+        return;
+    }
+    if (selectedModalFromAccount === selectedModalToAccount) {
+        showMessage('From and To accounts cannot be the same.');
+        return;
+    }
+
+    const newTransferId = crypto.randomUUID(); // Ek unique ID banao is transfer ke liye
+
+    // Do transactions taiyaar karo
+    const expenseTx = {
+        transaction_date: date, type: 'EXPENSE', category: 'Internal Transfer',
+        amount: Math.abs(amount), notes: description, payment_mode: selectedModalFromAccount, 
+        user_id: userId, transfer_id: newTransferId
+    };
+    const incomeTx = {
+        transaction_date: date, type: 'INCOME', category: 'Internal Transfer',
+        amount: Math.abs(amount), notes: description, payment_mode: selectedModalToAccount, 
+        user_id: userId, transfer_id: newTransferId
+    };
+
+    showSpinner();
+    try {
+        // Dono transactions ko ek saath database mein daalo
+        const { error } = await supabaseClient.from('transactions').insert([expenseTx, incomeTx]);
+        if (error) throw error;
+        
+        hideModal();
+        showMessage('Transfer successful!');
+        await fetchData();
+    } catch (error) {
+        showMessage(`Transfer failed: ${error.message}`);
+    } finally {
+        hideSpinner();
+    }
+}
 function showModal() {
     document.getElementById('modal-date').valueAsDate = new Date();
     document.getElementById('modal-amount').value = '';
     document.getElementById('modal-description').value = '';
-    selectedModalAccount = null;
+    selectedModalFromAccount = null;
+    selectedModalToAccount = null;
     selectedModalCategory = null;
-    document.querySelector('.type-btn[data-type="EXPENSE"]').classList.add('active');
-    document.querySelector('.type-btn[data-type="INCOME"]').classList.remove('active');
-    selectedModalType = 'EXPENSE';
-    populateAccountsInModal();
-    populateCategoriesInModal('EXPENSE');
+    
+    // UI ko default 'Expense' state par set karo
+    handleModalTypeChange('EXPENSE', document.querySelector('.type-btn[data-type="EXPENSE"]'));
+    
     document.getElementById('transaction-modal-overlay').classList.add('active');
 }
 function hideModal() {
@@ -735,6 +798,28 @@ function initializeRealtimeSubscriptions() {
         })
         .subscribe();
 }
+function handleModalTypeChange(type, element) {
+    document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
+    element.classList.add('active');
+    selectedModalType = type;
+
+    const standardView = document.getElementById('modal-standard-view');
+    const transferView = document.getElementById('modal-transfer-view');
+
+    if (type === 'TRANSFER') {
+        standardView.classList.add('hidden');
+        transferView.classList.remove('hidden');
+        // Transfer ke liye "From" aur "To" selectors populate karo
+        populateAccountsInModal('modal-from-account', name => selectedModalFromAccount = name);
+        populateAccountsInModal('modal-to-account', name => selectedModalToAccount = name);
+    } else {
+        standardView.classList.remove('hidden');
+        transferView.classList.add('hidden');
+        // Standard ke liye account aur category selectors populate karo
+        populateAccountsInModal('modal-accounts-selector', name => selectedModalFromAccount = name);
+        populateCategoriesInModal(selectedModalType);
+    }
+}
 // PURANE initializeApp FUNCTION KO IS NAYE, COMPLETE FUNCTION SE REPLACE KAREIN
 
 function initializeApp() {
@@ -757,13 +842,10 @@ function initializeApp() {
         if (event.target.id === 'transaction-modal-overlay') hideModal();
     };
     document.querySelectorAll('.type-btn').forEach(btn => {
-        btn.onclick = () => {
-            document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            selectedModalType = btn.dataset.type;
-            populateCategoriesInModal(selectedModalType);
-        };
-    });
+    btn.onclick = () => {
+        handleModalTypeChange(btn.dataset.type, btn);
+    };
+});
 
     // --- POMODORO EVENT LISTENERS ---
     document.getElementById('pomodoro-start-btn').onclick = startPomodoro;
