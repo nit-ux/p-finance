@@ -24,7 +24,6 @@ let selectedModalCategory = null;
 let selectedModalFromAccount = null;
 let selectedModalToAccount = null;
 
-
 // ====== AUTHENTICATION & SECURITY CHECK ======
 supabaseClient.auth.onAuthStateChange((event, session) => {
     if (!session || !session.user) {
@@ -77,8 +76,8 @@ function handleTabClick(pageName, element) {
     }
     document.querySelectorAll('.page-content').forEach(page => page.classList.add('hidden'));
     if (pageName === 'Home') document.getElementById('home-page').classList.remove('hidden');
-    else if (pageName === 'Category') { document.getElementById('category-page').classList.remove('hidden'); renderCategoriesList(); }
-    else if (pageName === 'Accounts') { document.getElementById('accounts-page').classList.remove('hidden'); renderAccountsList(); }
+    else if (pageName === 'Category') { document.getElementById('category-page').classList.remove('hidden'); renderCategoriesList(); } 
+    else if (pageName === 'Accounts') { document.getElementById('accounts-page').classList.remove('hidden'); renderAccountsList(); } 
     else if (pageName === 'Transaction') { document.getElementById('transaction-page').classList.remove('hidden'); fetchData(); }
     else if (pageName === 'Tasks') { document.getElementById('tasks-page').classList.remove('hidden'); renderTasks(); }
     else if (pageName === 'Pomodoro') { document.getElementById('pomodoro-page').classList.remove('hidden'); initializePomodoroPage(); }
