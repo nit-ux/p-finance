@@ -19,6 +19,11 @@ let expenseChartInstance = null;
 let allTimeTransactions = [];
 let pomodoroInterval = null;
 let currentPomodoroTask = null;
+let selectedModalType = 'EXPENSE';
+let selectedModalCategory = null;
+let selectedModalFromAccount = null;
+let selectedModalToAccount = null;
+
 
 // ====== AUTHENTICATION & SECURITY CHECK ======
 supabaseClient.auth.onAuthStateChange((event, session) => {
@@ -26,7 +31,6 @@ supabaseClient.auth.onAuthStateChange((event, session) => {
         window.location.href = 'login.html';
     }
 });
-
 (async () => {
     const { data: { session } } = await supabaseClient.auth.getSession();
     if (session && session.user) {
@@ -35,11 +39,7 @@ supabaseClient.auth.onAuthStateChange((event, session) => {
         window.location.href = 'login.html';
     }
 })();
-
-async function logoutUser() {
-    await supabaseClient.auth.signOut();
-}
-
+async function logoutUser() { await supabaseClient.auth.signOut(); }
 async function getCurrentUserId() {
     const { data: { session } } = await supabaseClient.auth.getSession();
     return session ? session.user.id : null;
@@ -52,39 +52,21 @@ function showMessage(message) {
     msgBox.style.display = 'block';
 }
 function hideMessage() { document.getElementById('messageBox').style.display = 'none'; }
-
 function showConfirmation(message) {
     return new Promise(resolve => {
         const confirmBox = document.getElementById('confirmationBox');
-        const confirmText = document.getElementById('confirmationText');
-        const yesBtn = document.getElementById('confirm-yes-btn');
-        const noBtn = document.getElementById('confirm-no-btn');
-        confirmText.innerText = message;
+        document.getElementById('confirmationText').innerText = message;
         confirmBox.style.display = 'block';
-        yesBtn.onclick = () => { confirmBox.style.display = 'none'; resolve(true); };
-        noBtn.onclick = () => { confirmBox.style.display = 'none'; resolve(false); };
+        document.getElementById('confirm-yes-btn').onclick = () => { confirmBox.style.display = 'none'; resolve(true); };
+        document.getElementById('confirm-no-btn').onclick = () => { confirmBox.style.display = 'none'; resolve(false); };
     });
 }
-
 function showSpinner() { document.getElementById('loading-overlay').style.display = 'flex'; }
 function hideSpinner() { document.getElementById('loading-overlay').style.display = 'none'; }
-
-function openSidebar() {
-    document.getElementById('sidebar-menu').classList.add('open');
-    document.getElementById('sidebar-overlay').classList.add('active');
-}
-function closeSidebar() {
-    document.getElementById('sidebar-menu').classList.remove('open');
-    document.getElementById('sidebar-overlay').classList.remove('active');
-}
-
-function getHiddenAccounts() {
-    const hidden = localStorage.getItem('hiddenAccounts');
-    return hidden ? JSON.parse(hidden) : [];
-}
-function saveHiddenAccounts(accounts) {
-    localStorage.setItem('hiddenAccounts', JSON.stringify(accounts));
-}
+function openSidebar() { document.getElementById('sidebar-menu').classList.add('open'); document.getElementById('sidebar-overlay').classList.add('active'); }
+function closeSidebar() { document.getElementById('sidebar-menu').classList.remove('open'); document.getElementById('sidebar-overlay').classList.remove('active'); }
+function getHiddenAccounts() { const hidden = localStorage.getItem('hiddenAccounts'); return hidden ? JSON.parse(hidden) : []; }
+function saveHiddenAccounts(accounts) { localStorage.setItem('hiddenAccounts', JSON.stringify(accounts)); }
 
 function handleTabClick(pageName, element) {
     if (element.classList.contains('sidebar-link')) {
@@ -95,8 +77,8 @@ function handleTabClick(pageName, element) {
     }
     document.querySelectorAll('.page-content').forEach(page => page.classList.add('hidden'));
     if (pageName === 'Home') document.getElementById('home-page').classList.remove('hidden');
-    else if (pageName === 'Category') { document.getElementById('category-page').classList.remove('hidden'); renderCategoriesList(); } 
-    else if (pageName === 'Accounts') { document.getElementById('accounts-page').classList.remove('hidden'); renderAccountsList(); } 
+    else if (pageName === 'Category') { document.getElementById('category-page').classList.remove('hidden'); renderCategoriesList(); }
+    else if (pageName === 'Accounts') { document.getElementById('accounts-page').classList.remove('hidden'); renderAccountsList(); }
     else if (pageName === 'Transaction') { document.getElementById('transaction-page').classList.remove('hidden'); fetchData(); }
     else if (pageName === 'Tasks') { document.getElementById('tasks-page').classList.remove('hidden'); renderTasks(); }
     else if (pageName === 'Pomodoro') { document.getElementById('pomodoro-page').classList.remove('hidden'); initializePomodoroPage(); }
@@ -169,7 +151,7 @@ async function updateCategory(saveButton) {
     } catch (error) { showMessage(`Error updating category: ${error.message}`); renderCategoriesList(); }
 }
 async function renderCategoriesList() {
-    const [expenseCategories, incomeCategories] = await Promise.all([ getCategories('EXPENSE'), getCategories('INCOME') ]);
+    const [expenseCategories, incomeCategories] = await Promise.all([getCategories('EXPENSE'), getCategories('INCOME')]);
     const expenseList = document.getElementById('expense-categories-list');
     const incomeList = document.getElementById('income-categories-list');
     expenseList.innerHTML = '';
@@ -313,11 +295,70 @@ async function toggleBalanceVisibility(accountName) {
     saveHiddenAccounts(hiddenAccounts);
     await fetchData();
 }
-let selectedModalType = 'EXPENSE';
-let selectedModalAccount = null;
-let selectedModalCategory = null;
-let selectedModalFromAccount = null;
-let selectedModalToAccount = null;
+async function saveTransactionFromModal() { if (selectedModalType === 'TRANSFER') { await saveTransfer(); } else { await saveStandardTransaction(); } }
+async function saveStandardTransaction() {
+    const date = document.getElementById('modal-date').value;
+    const amount = parseFloat(document.getElementById('modal-amount').value);
+    const description = document.getElementById('modal-description').value;
+    const userId = await getCurrentUserId();
+    if (!userId || !date || !amount || !description || !selectedModalFromAccount || !selectedModalCategory) { showMessage('Please fill all fields and select an account/category.'); return; }
+    showSpinner();
+    try {
+        const { error } = await supabaseClient.from('transactions').insert([{ transaction_date: date, type: selectedModalType, category: selectedModalCategory, amount: Math.abs(amount), notes: description, payment_mode: selectedModalFromAccount, user_id: userId }]);
+        if (error) throw error;
+        hideModal();
+        showMessage('Transaction added successfully!');
+        await fetchData();
+    } catch (error) { showMessage(`Failed to add transaction: ${error.message}`); } finally { hideSpinner(); }
+}
+async function saveTransfer() {
+    const date = document.getElementById('modal-date').value;
+    const amount = parseFloat(document.getElementById('modal-amount').value);
+    const description = document.getElementById('modal-description').value;
+    const userId = await getCurrentUserId();
+    if (!userId || !date || !amount || !description || !selectedModalFromAccount || !selectedModalToAccount) { showMessage('Please fill all fields and select both accounts.'); return; }
+    if (selectedModalFromAccount === selectedModalToAccount) { showMessage('From and To accounts cannot be the same.'); return; }
+    const newTransferId = crypto.randomUUID();
+    const expenseTx = { transaction_date: date, type: 'EXPENSE', category: 'Internal Transfer', amount: Math.abs(amount), notes: description, payment_mode: selectedModalFromAccount, user_id: userId, transfer_id: newTransferId };
+    const incomeTx = { transaction_date: date, type: 'INCOME', category: 'Internal Transfer', amount: Math.abs(amount), notes: description, payment_mode: selectedModalToAccount, user_id: userId, transfer_id: newTransferId };
+    showSpinner();
+    try {
+        const { error } = await supabaseClient.from('transactions').insert([expenseTx, incomeTx]);
+        if (error) throw error;
+        hideModal();
+        showMessage('Transfer successful!');
+        await fetchData();
+    } catch (error) { showMessage(`Transfer failed: ${error.message}`); } finally { hideSpinner(); }
+}
+function showModal() {
+    document.getElementById('modal-date').valueAsDate = new Date();
+    document.getElementById('modal-amount').value = '';
+    document.getElementById('modal-description').value = '';
+    selectedModalFromAccount = null;
+    selectedModalToAccount = null;
+    selectedModalCategory = null;
+    handleModalTypeChange('EXPENSE', document.querySelector('.type-btn[data-type="EXPENSE"]'));
+    document.getElementById('transaction-modal-overlay').classList.add('active');
+}
+function hideModal() { document.getElementById('transaction-modal-overlay').classList.remove('active'); }
+function handleModalTypeChange(type, element) {
+    document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
+    element.classList.add('active');
+    selectedModalType = type;
+    const standardView = document.getElementById('modal-standard-view');
+    const transferView = document.getElementById('modal-transfer-view');
+    if (type === 'TRANSFER') {
+        standardView.classList.add('hidden');
+        transferView.classList.remove('hidden');
+        populateAccountsInModal('modal-from-account', name => selectedModalFromAccount = name);
+        populateAccountsInModal('modal-to-account', name => selectedModalToAccount = name);
+    } else {
+        standardView.classList.remove('hidden');
+        transferView.classList.add('hidden');
+        populateAccountsInModal('modal-accounts-selector', name => selectedModalFromAccount = name);
+        populateCategoriesInModal(selectedModalType);
+    }
+}
 async function populateAccountsInModal(containerId, onSelect) {
     const accounts = await getAccounts();
     const container = document.getElementById(containerId);
@@ -327,12 +368,7 @@ async function populateAccountsInModal(containerId, onSelect) {
         item.className = 'selector-item';
         item.innerText = acc.name;
         item.dataset.name = acc.name;
-        
-        item.onclick = () => {
-            container.querySelectorAll('.selector-item').forEach(el => el.classList.remove('active'));
-            item.classList.add('active');
-            onSelect(item.dataset.name); // Callback function use karo
-        };
+        item.onclick = () => { container.querySelectorAll('.selector-item').forEach(el => el.classList.remove('active')); item.classList.add('active'); onSelect(item.dataset.name); };
         container.appendChild(item);
     });
 }
@@ -345,111 +381,9 @@ async function populateCategoriesInModal(type) {
         item.className = 'selector-item';
         item.innerText = catName;
         item.dataset.name = catName;
-        item.onclick = () => {
-            container.querySelectorAll('.selector-item').forEach(el => el.classList.remove('active'));
-            item.classList.add('active');
-            selectedModalCategory = item.dataset.name;
-        };
+        item.onclick = () => { container.querySelectorAll('.selector-item').forEach(el => el.classList.remove('active')); item.classList.add('active'); selectedModalCategory = item.dataset.name; };
         container.appendChild(item);
     });
-}
-async function saveTransactionFromModal() {
-    if (selectedModalType === 'TRANSFER') {
-        await saveTransfer();
-    } else {
-        await saveStandardTransaction();
-    }
-}
-// Yeh function Income/Expense save karega (aapka purana logic)
-async function saveStandardTransaction() {
-    const date = document.getElementById('modal-date').value;
-    const amount = parseFloat(document.getElementById('modal-amount').value);
-    const description = document.getElementById('modal-description').value;
-    const userId = await getCurrentUserId();
-
-    if (!userId || !date || !amount || !description || !selectedModalFromAccount || !selectedModalCategory) {
-        showMessage('Please fill all fields and select an account/category.');
-        return;
-    }
-
-    showSpinner();
-    try {
-        const { error } = await supabaseClient.from('transactions').insert([{ 
-            transaction_date: date, type: selectedModalType, category: selectedModalCategory, 
-            amount: Math.abs(amount), notes: description, payment_mode: selectedModalFromAccount, user_id: userId 
-        }]);
-        if (error) throw error;
-        
-        hideModal();
-        showMessage('Transaction added successfully!');
-        await fetchData();
-    } catch (error) {
-        showMessage(`Failed to add transaction: ${error.message}`);
-    } finally {
-        hideSpinner();
-    }
-}
-// YEH NAYA FUNCTION ADD KAREIN
-async function saveTransfer() {
-    const date = document.getElementById('modal-date').value;
-    const amount = parseFloat(document.getElementById('modal-amount').value);
-    const description = document.getElementById('modal-description').value;
-    const userId = await getCurrentUserId();
-
-    // Validation
-    if (!userId || !date || !amount || !description || !selectedModalFromAccount || !selectedModalToAccount) {
-        showMessage('Please fill all fields and select both accounts.');
-        return;
-    }
-    if (selectedModalFromAccount === selectedModalToAccount) {
-        showMessage('From and To accounts cannot be the same.');
-        return;
-    }
-
-    const newTransferId = crypto.randomUUID(); // Ek unique ID banao is transfer ke liye
-
-    // Do transactions taiyaar karo
-    const expenseTx = {
-        transaction_date: date, type: 'EXPENSE', category: 'Internal Transfer',
-        amount: Math.abs(amount), notes: description, payment_mode: selectedModalFromAccount, 
-        user_id: userId, transfer_id: newTransferId
-    };
-    const incomeTx = {
-        transaction_date: date, type: 'INCOME', category: 'Internal Transfer',
-        amount: Math.abs(amount), notes: description, payment_mode: selectedModalToAccount, 
-        user_id: userId, transfer_id: newTransferId
-    };
-
-    showSpinner();
-    try {
-        // Dono transactions ko ek saath database mein daalo
-        const { error } = await supabaseClient.from('transactions').insert([expenseTx, incomeTx]);
-        if (error) throw error;
-        
-        hideModal();
-        showMessage('Transfer successful!');
-        await fetchData();
-    } catch (error) {
-        showMessage(`Transfer failed: ${error.message}`);
-    } finally {
-        hideSpinner();
-    }
-}
-function showModal() {
-    document.getElementById('modal-date').valueAsDate = new Date();
-    document.getElementById('modal-amount').value = '';
-    document.getElementById('modal-description').value = '';
-    selectedModalFromAccount = null;
-    selectedModalToAccount = null;
-    selectedModalCategory = null;
-    
-    // UI ko default 'Expense' state par set karo
-    handleModalTypeChange('EXPENSE', document.querySelector('.type-btn[data-type="EXPENSE"]'));
-    
-    document.getElementById('transaction-modal-overlay').classList.add('active');
-}
-function hideModal() {
-    document.getElementById('transaction-modal-overlay').classList.remove('active');
 }
 function handleChartFilterClick(filterType) {
     document.querySelectorAll('.chart-filter-btn').forEach(btn => btn.classList.remove('active'));
@@ -458,10 +392,8 @@ function handleChartFilterClick(filterType) {
     const today = new Date();
     if (filterType === 'thisMonth') {
         document.getElementById('btn-this-month').classList.add('active');
-        const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
-        const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-        startDateInput.valueAsDate = firstDay;
-        endDateInput.valueAsDate = lastDay;
+        startDateInput.valueAsDate = new Date(today.getFullYear(), today.getMonth(), 1);
+        endDateInput.valueAsDate = new Date(today.getFullYear(), today.getMonth() + 1, 0);
     } else if (filterType === 'allTime') {
         document.getElementById('btn-all-time').classList.add('active');
         startDateInput.value = '';
@@ -485,18 +417,10 @@ async function renderExpenseChart(transactions) {
     const ctx = document.getElementById('expenseChart').getContext('2d');
     const expenses = transactions.filter(tx => tx.type.toUpperCase() === 'EXPENSE');
     const expenseByCategory = {};
-    expenses.forEach(tx => {
-        if (expenseByCategory[tx.category]) {
-            expenseByCategory[tx.category] += tx.amount;
-        } else {
-            expenseByCategory[tx.category] = tx.amount;
-        }
-    });
+    expenses.forEach(tx => { expenseByCategory[tx.category] ? expenseByCategory[tx.category] += tx.amount : expenseByCategory[tx.category] = tx.amount; });
     const labels = Object.keys(expenseByCategory);
     const data = Object.values(expenseByCategory);
-    if (expenseChartInstance) {
-        expenseChartInstance.destroy();
-    }
+    if (expenseChartInstance) { expenseChartInstance.destroy(); }
     expenseChartInstance = new Chart(ctx, {
         type: 'doughnut', data: { labels: labels, datasets: [{ label: 'Expenses', data: data, backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40', '#C9CBCF', '#7C4DFF'], hoverOffset: 4 }] },
         options: { responsive: true, plugins: { legend: { position: 'top' }, title: { display: true, text: 'Expenses by Category' } } }
@@ -511,12 +435,7 @@ async function fetchData() {
         const accountsData = await getAccounts();
         const balances = {};
         accountsData.forEach(acc => { balances[acc.name] = acc.initial_balance || 0; });
-        allTimeTransactions.forEach(tx => {
-            if (balances[tx.payment_mode] !== undefined) {
-                if (tx.type.toUpperCase() === 'INCOME') balances[tx.payment_mode] += Math.abs(tx.amount);
-                else if (tx.type.toUpperCase() === 'EXPENSE') balances[tx.payment_mode] -= Math.abs(tx.amount);
-            }
-        });
+        allTimeTransactions.forEach(tx => { if (balances[tx.payment_mode] !== undefined) { if (tx.type.toUpperCase() === 'INCOME') balances[tx.payment_mode] += Math.abs(tx.amount); else if (tx.type.toUpperCase() === 'EXPENSE') balances[tx.payment_mode] -= Math.abs(tx.amount); } });
         const currencyFormat = { style: 'currency', currency: 'INR' };
         let totalBalance = 0;
         const individualBalancesContainer = document.getElementById('individual-balances');
@@ -525,9 +444,7 @@ async function fetchData() {
         Object.keys(balances).sort().forEach(accName => {
             const balance = balances[accName];
             const isHidden = hiddenAccounts.includes(accName);
-            if (!isHidden) {
-                totalBalance += balance;
-            }
+            if (!isHidden) { totalBalance += balance; }
             const balanceText = isHidden ? '∗∗∗∗' : new Intl.NumberFormat('en-IN', currencyFormat).format(balance);
             const eyeIconSVG = isHidden ? `<svg viewBox="0 0 576 512"><path d="M288 32c-80.8 0-145.5 36.8-192.6 80.6C48.6 156 17.3 204.8 2.5 256a32.5 32.5 0 000 7.2c14.8 51.2 46.1 99.4 93.1 142.4C142.5 443.2 207.2 480 288 480c80.8 0 145.5-36.8 192.6-80.6c47-43 78.3-91.2 93.1-142.4a32.5 32.5 0 000-7.2c-14.8-51.2-46.1-99.4-93.1-142.4C433.5 68.8 368.8 32 288 32zM432 256c0 79.5-64.5 144-144 144s-144-64.5-144-144s64.5-144 144-144s144 64.5 144 144zM288 192c0 35.3-28.7 64-64 64c-11.2 0-21.6-2.9-30.7-8.1l-98.3-98.3c-23.1 27.9-39.7 61.9-46.9 99.4L288 192zm22.4 91.9c-7.7 5.1-16.6 8.1-26.4 8.1c-35.3 0-64-28.7-64-64c0-9.8 2.9-18.7 8.1-26.4l-98.3-98.3c-37.5 7.2-71.5 23.8-99.4 46.9l286.1 286.1c23.1-27.9 39.7-61.9 46.9-99.4L310.4 283.9z"/></svg>` : `<svg viewBox="0 0 576 512"><path d="M288 32c-80.8 0-145.5 36.8-192.6 80.6C48.6 156 17.3 204.8 2.5 256a32.5 32.5 0 000 7.2c14.8 51.2 46.1 99.4 93.1 142.4C142.5 443.2 207.2 480 288 480c80.8 0 145.5-36.8 192.6-80.6c47-43 78.3-91.2 93.1-142.4a32.5 32.5 0 000-7.2c-14.8-51.2-46.1-99.4-93.1-142.4C433.5 68.8 368.8 32 288 32zM432 256c0 79.5-64.5 144-144 144s-144-64.5-144-144s64.5-144 144-144s144 64.5 144 144zM288 224a32 32 0 110 64a32 32 0 110-64z"/></svg>`;
             individualBalancesContainer.innerHTML += `<div class="balance-item"><span>${accName}:</span><div class="balance-value-container"><span>${balanceText}</span><button class="visibility-toggle-btn" onclick="toggleBalanceVisibility('${accName}')">${eyeIconSVG}</button></div></div>`;
@@ -553,27 +470,18 @@ async function fetchData() {
         currentlyDisplayedCount = 0;
         displayTransactions();
         updateChartData();
-    } catch (error) {
-        console.error('Error fetching data:', error);
-        showMessage('Error fetching data from Supabase.');
-    } finally {
-        hideSpinner();
-    }
+    } catch (error) { console.error('Error fetching data:', error); showMessage('Error fetching data from Supabase.'); } finally { hideSpinner(); }
 }
 function displayTransactions() {
     const dataContainer = document.getElementById('data-container');
     const loadMoreBtn = document.getElementById('load-more-btn');
     const currencyFormat = { style: 'currency', currency: 'INR' };
-    if (allTransactions.length === 0 && currentlyDisplayedCount === 0) {
-        dataContainer.innerHTML = '<p style="text-align:center;">No transactions found.</p>';
-        loadMoreBtn.style.display = 'none'; return;
-    }
+    if (allTransactions.length === 0 && currentlyDisplayedCount === 0) { dataContainer.innerHTML = '<p style="text-align:center;">No transactions found.</p>'; loadMoreBtn.style.display = 'none'; return; }
     const start = currentlyDisplayedCount;
     const end = Math.min(start + transactionsPerLoad, allTransactions.length);
     let contentToAdd = '';
     for (let i = start; i < end; i++) {
-        const row = allTransactions[i];
-        const { transaction_date, type, category, amount, notes, payment_mode } = row;
+        const { transaction_date, type, category, amount, notes, payment_mode } = allTransactions[i];
         const date = new Date(transaction_date);
         const formattedDate = `${String(date.getDate()).padStart(2, '0')}-${String(date.getMonth() + 1).padStart(2, '0')}-${date.getFullYear()}`;
         contentToAdd += `<div class="transaction-card"><div class="card-header"><span>${category}</span><span style="color: ${type.toUpperCase() === 'INCOME' ? 'green' : 'red'};">${type.toUpperCase() === 'INCOME' ? '+' : '-'} ${new Intl.NumberFormat('en-IN', currencyFormat).format(amount)}</span></div><div class="card-body"><p>${notes || ''}</p></div><div class="card-footer"><span><small>${payment_mode}</small></span><span><small>${formattedDate}</small></span></div></div>`;
@@ -611,19 +519,9 @@ async function renderTasks() {
         incompleteContainer.innerHTML = '';
         completedContainer.innerHTML = '';
         document.getElementById('completed-tasks-count').innerText = completedTasks.length;
-        if (incompleteTasks.length === 0) {
-            incompleteContainer.innerHTML = '<p style="text-align:center;">No active tasks. Add one above!</p>';
-        } else {
-            incompleteTasks.forEach(task => { const taskEl = createTaskElement(task); incompleteContainer.appendChild(taskEl); });
-        }
-        if (completedTasks.length > 0) {
-             completedTasks.forEach(task => { const taskEl = createTaskElement(task); completedContainer.appendChild(taskEl); });
-        }
-    } catch (error) {
-        showMessage(`Error fetching tasks: ${error.message}`);
-    } finally {
-        hideSpinner();
-    }
+        if (incompleteTasks.length === 0) { incompleteContainer.innerHTML = '<p style="text-align:center;">No active tasks. Add one above!</p>'; } else { incompleteTasks.forEach(task => { const taskEl = createTaskElement(task); incompleteContainer.appendChild(taskEl); }); }
+        if (completedTasks.length > 0) { completedTasks.forEach(task => { const taskEl = createTaskElement(task); completedContainer.appendChild(taskEl); }); }
+    } catch (error) { showMessage(`Error fetching tasks: ${error.message}`); } finally { hideSpinner(); }
 }
 function createTaskElement(task) {
     const taskEl = document.createElement('div');
@@ -647,39 +545,11 @@ async function addTask() {
         document.getElementById('new-task-desc').value = '';
         document.getElementById('new-task-due-date').value = '';
         await renderTasks();
-    } catch (error) {
-        showMessage(`Error adding task: ${error.message}`);
-    } finally {
-        hideSpinner();
-    }
+    } catch (error) { showMessage(`Error adding task: ${error.message}`); } finally { hideSpinner(); }
 }
-async function toggleTaskStatus(taskId, currentStatus) {
-    try {
-        const { error } = await supabaseClient.from('tasks').update({ is_completed: !currentStatus }).eq('id', taskId);
-        if (error) throw error;
-        await renderTasks();
-    } catch (error) {
-        showMessage(`Error updating task: ${error.message}`);
-    }
-}
-async function deleteTask(taskId) {
-    const confirmed = await showConfirmation('Are you sure you want to delete this task?');
-    if (confirmed) {
-        try {
-            const { error } = await supabaseClient.from('tasks').delete().eq('id', taskId);
-            if (error) throw error;
-            await renderTasks();
-        } catch (error) {
-            showMessage(`Error deleting task: ${error.message}`);
-        }
-    }
-}
-function toggleCompletedTasks() {
-    const header = document.getElementById('completed-tasks-header');
-    const list = document.getElementById('completed-tasks-list');
-    header.classList.toggle('open');
-    list.classList.toggle('open');
-}
+async function toggleTaskStatus(taskId, currentStatus) { try { const { error } = await supabaseClient.from('tasks').update({ is_completed: !currentStatus }).eq('id', taskId); if (error) throw error; await renderTasks(); } catch (error) { showMessage(`Error updating task: ${error.message}`); } }
+async function deleteTask(taskId) { if (await showConfirmation('Are you sure you want to delete this task?')) { try { const { error } = await supabaseClient.from('tasks').delete().eq('id', taskId); if (error) throw error; await renderTasks(); } catch (error) { showMessage(`Error deleting task: ${error.message}`); } } }
+function toggleCompletedTasks() { const header = document.getElementById('completed-tasks-header'); const list = document.getElementById('completed-tasks-list'); header.classList.toggle('open'); list.classList.toggle('open'); }
 
 // --- REALTIME POMODORO TIMER LOGIC ---
 function initializePomodoroPage() { populatePomodoroTaskSelect(); resetPomodoroUI(); }
@@ -695,33 +565,15 @@ async function populatePomodoroTaskSelect() {
 async function startPomodoro() {
     const taskId = document.getElementById('pomodoro-task-select').value;
     if (!taskId) { showMessage("Please select a task."); return; }
-
     let updates = {};
     if (currentPomodoroTask && currentPomodoroTask.pomodoro_state === 'paused') {
-        // RESUME from pause
         const timeLeft = currentPomodoroTask.pomodoro_time_left_on_pause;
-        updates = {
-            pomodoro_state: 'running',
-            // .toISOString() add kiya gaya hai
-            pomodoro_start_time: new Date(Date.now() - ((25 * 60) - timeLeft) * 1000).toISOString(),
-        };
+        updates = { pomodoro_state: 'running', pomodoro_start_time: new Date(Date.now() - ((25 * 60) - timeLeft) * 1000).toISOString() };
     } else {
-        // START new session
-        updates = {
-            pomodoro_state: 'running',
-            // .toISOString() add kiya gaya hai
-            pomodoro_start_time: new Date().toISOString(),
-            pomodoro_time_left_on_pause: null,
-        };
+        updates = { pomodoro_state: 'running', pomodoro_start_time: new Date().toISOString(), pomodoro_time_left_on_pause: null };
     }
-
     const { error } = await supabaseClient.from('tasks').update(updates).eq('id', taskId);
-
-    if (error) {
-        // Error ko behtar tarike se handle karein
-        console.error("Error starting pomodoro:", error);
-        showMessage(`Error: Could not start timer. ${error.message}`);
-    }
+    if (error) { console.error("Error starting pomodoro:", error); showMessage(`Error: Could not start timer. ${error.message}`); }
 }
 async function pausePomodoro() {
     if (!currentPomodoroTask || currentPomodoroTask.pomodoro_state !== 'running') return;
@@ -752,12 +604,7 @@ function handlePomodoroUpdate(task) {
             pomodoroInterval = setInterval(() => {
                 const now = Date.now();
                 const timeLeft = Math.round((endTime - now) / 1000);
-                if (timeLeft <= 0) {
-                    clearInterval(pomodoroInterval);
-                    document.getElementById('alarm-sound').play();
-                    resetPomodoro();
-                    return;
-                }
+                if (timeLeft <= 0) { clearInterval(pomodoroInterval); document.getElementById('alarm-sound').play(); resetPomodoro(); return; }
                 updateTimerDisplay(timeLeft);
             }, 1000);
             document.getElementById('pomodoro-start-btn').classList.add('hidden');
@@ -774,21 +621,17 @@ function handlePomodoroUpdate(task) {
             break;
     }
 }
-function updateTimerDisplay(totalSeconds) {
-    const minutes = Math.floor(totalSeconds / 60);
-    const seconds = totalSeconds % 60;
-    document.getElementById('pomodoro-timer-display').innerText = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-}
+function updateTimerDisplay(totalSeconds) { const minutes = Math.floor(totalSeconds / 60); const seconds = totalSeconds % 60; document.getElementById('pomodoro-timer-display').innerText = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`; }
 
 // ====== APP INITIALIZATION ======
 function initializeRealtimeSubscriptions() {
     console.log("Initializing realtime subscriptions...");
-    const allDataSubscription = supabaseClient.channel('public:all_data')
+    supabaseClient.channel('public:all_data')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'transactions' }, () => fetchData())
         .on('postgres_changes', { event: '*', schema: 'public', table: 'accounts' }, async () => { await fetchData(); await populateAccountFilter(); })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'categories' }, async () => { await fetchData(); await populateCategoryFilter(); })
         .subscribe();
-    const tasksSubscription = supabaseClient.channel('public:tasks')
+    supabaseClient.channel('public:tasks')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, (payload) => {
             renderTasks();
             const selectedTaskId = document.getElementById('pomodoro-task-select').value;
@@ -798,32 +641,6 @@ function initializeRealtimeSubscriptions() {
         })
         .subscribe();
 }
-function handleModalTypeChange(type, element) {
-    document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
-    element.classList.add('active');
-    selectedModalType = type;
-
-    const standardView = document.getElementById('modal-standard-view');
-    const transferView = document.getElementById('modal-transfer-view');
-
-    if (type === 'TRANSFER') {
-        standardView.classList.add('hidden');
-        transferView.classList.remove('hidden');
-        // Transfer ke liye "From" aur "To" selectors populate karo
-        populateAccountsInModal('modal-from-account', name => selectedModalFromAccount = name);
-        populateAccountsInModal('modal-to-account', name => selectedModalToAccount = name);
-    } else {
-        standardView.classList.remove('hidden');
-        transferView.classList.add('hidden');
-        // Standard ke liye account aur category selectors populate karo
-        populateAccountsInModal('modal-accounts-selector', name => selectedModalFromAccount = name);
-        populateCategoriesInModal(selectedModalType);
-    }
-}
-// PURANE initializeApp FUNCTION KO IS NAYE, COMPLETE FUNCTION SE REPLACE KAREIN
-
-// PURANE initializeApp FUNCTION KO IS NAYE, COMPLETE FUNCTION SE REPLACE KAREIN
-
 function initializeApp() {
     console.log("Loading initial data...");
     fetchData(); 
@@ -831,51 +648,28 @@ function initializeApp() {
     populateAccountFilter();
     handleChartFilterClick('thisMonth');
     window.toggleBalanceVisibility = toggleBalanceVisibility;
-
-    // --- SIDEBAR EVENT LISTENERS ---
     document.getElementById('menu-btn').onclick = openSidebar;
     document.getElementById('sidebar-overlay').onclick = closeSidebar;
-
-    // --- MODAL EVENT LISTENERS ---
     document.getElementById('add-transaction-fab').onclick = showModal;
     document.getElementById('modal-close-btn').onclick = hideModal;
     document.getElementById('modal-save-btn').onclick = saveTransactionFromModal;
-    document.getElementById('transaction-modal-overlay').onclick = (event) => {
-        if (event.target.id === 'transaction-modal-overlay') hideModal();
-    };
-    // Type buttons (Expense, Income, Transfer) ke liye listener
+    document.getElementById('transaction-modal-overlay').onclick = (event) => { if (event.target.id === 'transaction-modal-overlay') hideModal(); };
     document.querySelectorAll('.type-btn').forEach(btn => {
-        btn.onclick = () => {
-            handleModalTypeChange(btn.dataset.type, btn);
-        };
+        btn.onclick = () => { handleModalTypeChange(btn.dataset.type, btn); };
     });
-
-    // --- POMODORO EVENT LISTENERS ---
     document.getElementById('pomodoro-start-btn').onclick = startPomodoro;
     document.getElementById('pomodoro-pause-btn').onclick = pausePomodoro;
     document.getElementById('pomodoro-reset-btn').onclick = resetPomodoro;
     document.getElementById('pomodoro-task-select').onchange = async (e) => {
         const taskId = e.target.value;
-        if (!taskId) {
-            resetPomodoroUI();
-            currentPomodoroTask = null;
-            return;
-        }
+        if (!taskId) { resetPomodoroUI(); currentPomodoroTask = null; return; }
         const { data: task } = await supabaseClient.from('tasks').select('*').eq('id', taskId).single();
-        if (task) {
-            handlePomodoroUpdate(task);
-        }
+        if (task) { handlePomodoroUpdate(task); }
     };
-
-    // --- TASKS PAGE EVENT LISTENER ---
     document.getElementById('completed-tasks-header').onclick = toggleCompletedTasks;
-    
-    // --- LOGOUT BUTTON LISTENER ---
     const logoutButton = document.getElementById('logout-btn');
     if (logoutButton) {
         logoutButton.addEventListener('click', logoutUser);
     }
-    
-    // --- REALTIME SUBSCRIPTIONS ---
     initializeRealtimeSubscriptions();
 }
