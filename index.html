@@ -179,25 +179,40 @@
 
     <!-- Transaction Modal Overlay -->
     <div id="transaction-modal-overlay" class="modal-overlay">
-        <div id="transaction-modal-content" class="modal-content">
-            <div class="modal-header">
-                <h3>Add Transaction</h3>
-                <button id="modal-close-btn" class="close-btn">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div id="modal-type-selector" class="type-selector">
-                    <button class="type-btn active" data-type="EXPENSE">Expense</button>
-                    <button class="type-btn" data-type="INCOME">Income</button>
-                </div>
-                <input type="date" id="modal-date">
-                <p class="selector-label">From Account:</p>
-                <div id="modal-accounts-selector" class="horizontal-selector"></div>
-                <input type="number" id="modal-amount" placeholder="0.00">
-                <input type="text" id="modal-description" placeholder="Add a note...">
-                <p class="selector-label">Category:</p>
-                <div id="modal-categories-selector" class="horizontal-selector"></div>
-                <button id="modal-save-btn" class="save-transaction-btn">SAVE TRANSACTION</button>
-            </div>
+        <!-- PURANE .modal-body KO IS NAYE CODE SE REPLACE KAREIN -->
+<div class="modal-body">
+    <!-- Type Selector (Income/Expense/Transfer) -->
+    <div id="modal-type-selector" class="type-selector">
+        <button class="type-btn active" data-type="EXPENSE">Expense</button>
+        <button class="type-btn" data-type="INCOME">Income</button>
+        <button class="type-btn" data-type="TRANSFER">Transfer</button>
+    </div>
+    
+    <!-- Standard View (for Income/Expense) -->
+    <div id="modal-standard-view">
+        <p class="selector-label">From Account:</p>
+        <div id="modal-accounts-selector" class="horizontal-selector"></div>
+        <p class="selector-label">Category:</p>
+        <div id="modal-categories-selector" class="horizontal-selector"></div>
+    </div>
+
+    <!-- Transfer View -->
+    <div id="modal-transfer-view" class="hidden">
+        <p class="selector-label">From Account:</p>
+        <div id="modal-from-account" class="horizontal-selector"></div>
+        <p class="selector-label">To Account:</p>
+        <div id="modal-to-account" class="horizontal-selector"></div>
+    </div>
+    
+    <!-- Common Fields -->
+    <input type="number" id="modal-amount" placeholder="0.00">
+    <input type="date" id="modal-date">
+    <input type="text" id="modal-description" placeholder="Add a note...">
+    
+    <!-- Save Button -->
+    <button id="modal-save-btn" class="save-transaction-btn">SAVE TRANSACTION</button>
+</div>
+<!-- YAHAN TAK REPLACE KARNA HAI -->
         </div>
     </div>
         
