@@ -822,6 +822,8 @@ function handleModalTypeChange(type, element) {
 }
 // PURANE initializeApp FUNCTION KO IS NAYE, COMPLETE FUNCTION SE REPLACE KAREIN
 
+// PURANE initializeApp FUNCTION KO IS NAYE, COMPLETE FUNCTION SE REPLACE KAREIN
+
 function initializeApp() {
     console.log("Loading initial data...");
     fetchData(); 
@@ -841,11 +843,12 @@ function initializeApp() {
     document.getElementById('transaction-modal-overlay').onclick = (event) => {
         if (event.target.id === 'transaction-modal-overlay') hideModal();
     };
+    // Type buttons (Expense, Income, Transfer) ke liye listener
     document.querySelectorAll('.type-btn').forEach(btn => {
-    btn.onclick = () => {
-        handleModalTypeChange(btn.dataset.type, btn);
-    };
-});
+        btn.onclick = () => {
+            handleModalTypeChange(btn.dataset.type, btn);
+        };
+    });
 
     // --- POMODORO EVENT LISTENERS ---
     document.getElementById('pomodoro-start-btn').onclick = startPomodoro;
